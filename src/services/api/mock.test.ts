@@ -131,6 +131,32 @@ describe('MockLibraryApi circulation', () => {
     await expect(api.placeHold('r-002')).rejects.toMatchObject({ code: 'limit_reached' })
   })
 
+  it('promotes the next reservation to ready when a copy comes back', async () => {
+    const api = await signedIn()
+    const loan = await api.checkout('r-005')
+    const hold = await api.placeHold('r-005')
+    expect(hold.status).toBe('pending')
+
+    await api.returnLoan(loan.id)
+
+    const [promoted] = await api.getHolds()
+    expect(promoted.status).toBe('ready')
+    expect(promoted.queuePosition).toBe(0)
+    expect(promoted.expiresAt).toBeDefined()
+  })
+
+  it('leaves the queue alone when a returned title has no reservations', async () => {
+    const api = await signedIn()
+    const loan = await api.checkout('r-005')
+    await api.placeHold('r-002')
+
+    await api.returnLoan(loan.id)
+
+    const holds = await api.getHolds()
+    expect(holds).toHaveLength(1)
+    expect(holds[0].status).toBe('pending')
+  })
+
   it('will not book a slot that is already taken', async () => {
     const api = await signedIn()
     const today = new Date().toISOString().slice(0, 10)

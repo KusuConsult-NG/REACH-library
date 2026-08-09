@@ -1,5 +1,7 @@
 node_modules/
 dist/
+server/dist/
+server/data/
 dist-ssr/
 dev-dist/
 *.local

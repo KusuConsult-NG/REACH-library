@@ -1,0 +1,25 @@
+{
+  "name": "reach-api",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "REACH API proxy — fronts Koha's REST API and the University of Jos identity provider",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "npm run build && node --watch dist/index.js",
+    "typecheck": "tsc --noEmit",
+    "test": "npm run build && node --test \"dist/**/*.test.js\""
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.10.0",
+    "typescript": "^5.6.3"
+  }
+}

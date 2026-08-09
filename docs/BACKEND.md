@@ -1,5 +1,9 @@
 # REACH backend contract
 
+> **Implemented in [`server/`](../server).** This document is the contract; the proxy that satisfies
+> it lives in `server/` and runs today against a fixture catalogue when Koha credentials are absent.
+> Change one, change the other.
+
 The PWA never talks to Koha directly. Koha's REST API needs credentials that must not reach a
 browser, and its CORS posture assumes server-to-server use. A small Node/Express proxy sits between
 them, holds the Koha API key, performs the OAuth 2.0 exchange with the university identity
@@ -95,18 +99,23 @@ prefix by keeping them relative or by leaving `VITE_PROXY_BASE` unset.
 
 ## XP and analytics
 
-XP is computed and stored client-side in this build. For cross-device XP and for the library-impact
-metrics in PRD §6, the proxy should expose an activity endpoint and become the source of truth:
+The proxy owns the XP ledger:
 
-```
-POST /activity   { kind, resourceId, at }   -> { totalXp, level }
-GET  /activity                              -> Activity[]
-```
+| Method | Path | Body | Returns |
+| --- | --- | --- | --- |
+| GET | `/activity` | — | `{ activities, totalXp, level }` |
+| POST | `/activity` | `{ kind, resourceId?, resourceTitle? }` | `{ activity, bonus?, totalXp, level, earned }` |
 
-The client already funnels every XP-bearing interaction through a single thunk
-(`recordEngagement` in [`src/features/xp/engagement.ts`](../src/features/xp/engagement.ts)), so
-that migration touches one file. Daily caps and the weekly bonus should move server-side at the
-same time, since a client-side cap is advisory.
+`kind` may only be one of the five earning kinds — `opac_browse`, `eresource_access`,
+`resource_download`, `reservation`, `physical_borrow`. The weekly bonus is awarded server-side, or
+a client could simply post itself one. Daily caps are applied here too; a capped activity is still
+recorded, at zero XP. Checkouts and holds feed the ledger automatically.
+
+**The PWA does not consume these endpoints yet.** It keeps a local ledger so the dashboard works
+offline, which makes XP per-device for now. The client funnels every XP-bearing interaction through
+one thunk (`recordEngagement` in [`src/features/xp/engagement.ts`](../src/features/xp/engagement.ts)),
+so the migration is contained — but it has to reconcile a local ledger with the server's without
+breaking offline use, which is a change of its own.
 
 ## Push notifications
 

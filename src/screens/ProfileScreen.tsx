@@ -51,7 +51,9 @@ export function ProfileScreen() {
             <p className="small muted">
               {user ? ROLE_LABELS[user.role] : ''} · {user?.department}
             </p>
-            <p className="small muted">{user?.faculty}</p>
+            {user && user.faculty !== user.department ? (
+              <p className="small muted">{user.faculty}</p>
+            ) : null}
           </div>
           <Link to="/settings" className="iconbtn" aria-label="Settings">
             <SettingsIcon size={20} />

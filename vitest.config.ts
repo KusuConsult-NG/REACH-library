@@ -14,5 +14,7 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
     css: false,
+    // The API proxy has its own suite, run with node:test from server/.
+    include: ['src/**/*.test.{ts,tsx}'],
   },
 })

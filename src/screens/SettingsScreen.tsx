@@ -36,12 +36,6 @@ export function SettingsScreen() {
             checked={privacy.shareActivity}
             onChange={(shareActivity) => dispatch(setPrivacy({ shareActivity }))}
           />
-          <Switch
-            label="Appear on departmental standings"
-            description="Show your level and XP on the department leaderboard."
-            checked={privacy.showOnLeaderboard}
-            onChange={(showOnLeaderboard) => dispatch(setPrivacy({ showOnLeaderboard }))}
-          />
         </div>
         <p className="small muted" style={{ marginTop: 'var(--space-2)' }}>
           Borrowing records are personal data under the university data protection policy and are never shown

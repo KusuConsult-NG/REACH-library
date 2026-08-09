@@ -28,7 +28,7 @@ and loan period.
 ```bash
 npm run build        # typecheck + production build into dist/
 npm run preview      # serve the production build (service worker active)
-npm test             # 62 unit / integration tests
+npm test             # 64 unit / integration tests (and `cd server && npm test` for 28 more)
 ```
 
 The service worker is only registered in a production build, so use `npm run preview` to exercise
@@ -68,7 +68,7 @@ zero XP, so the dashboard stays honest about what the user did. All values live 
 ## Architecture
 
 ```
-src/
+src/            The PWA
   app/          Redux store, persistence middleware, typed hooks
   components/   App shell, icons, shared primitives, XP and resource cards
   config/       XP values, caps, level thresholds
@@ -77,6 +77,11 @@ src/
   screens/      One component per route
   services/     API abstraction (mock + Koha adapters), storage helpers
   styles/       Design tokens, base styles, component styles
+
+server/         The API proxy in front of Koha and the university IdP
+  src/routes/   auth, catalogue, circulation, spaces, consultations, activity
+  src/koha/     Koha REST client and record mapping
+  src/fixtures/ Dev catalogue, so the stack runs before credentials exist
 ```
 
 **The API boundary is the important seam.** Every screen and slice depends only on the `LibraryApi`
@@ -85,10 +90,23 @@ it:
 
 - `MockLibraryApi` — seeded catalogue, circulation rules, holds, bookings, persisted to
   `localStorage`. Used whenever `VITE_API_BASE_URL` is unset.
-- `KohaLibraryApi` — calls the REACH Express proxy that fronts Koha's REST API and the university
-  IdP. See [`docs/BACKEND.md`](docs/BACKEND.md) for the route contract.
+- `KohaLibraryApi` — calls the REACH Express proxy in [`server/`](server), which fronts Koha's REST
+  API and the university IdP. See [`docs/BACKEND.md`](docs/BACKEND.md) for the route contract.
 
 Switching between them changes no UI code.
+
+### Running the full stack
+
+The proxy starts in fixture mode with no configuration, so both halves run together today:
+
+```bash
+cd server && npm install && npm start        # http://localhost:8080
+# in another shell, from the repository root:
+VITE_API_BASE_URL=http://localhost:8080/api npm run dev
+```
+
+Set `CORS_ORIGINS=http://localhost:5173` for the proxy so the browser is allowed to call it. See
+[`server/README.md`](server/README.md) for going live against real Koha and SSO credentials.
 
 ### State and persistence
 

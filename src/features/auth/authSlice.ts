@@ -17,7 +17,6 @@ export const DEFAULT_PRIVACY: PrivacySettings = {
   // Sharing is opt-in: a library's borrowing record is sensitive by default.
   profileVisible: true,
   shareActivity: false,
-  showOnLeaderboard: false,
 }
 
 export const DEFAULT_NOTIFICATIONS: NotificationPrefs = {

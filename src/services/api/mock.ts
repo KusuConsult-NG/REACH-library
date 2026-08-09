@@ -413,8 +413,38 @@ export class MockLibraryApi implements LibraryApi {
     const returned: Loan = { ...loan, status: 'returned', returnedAt: new Date().toISOString() }
     this.state.loans = this.state.loans.map((l) => (l.id === loanId ? returned : l))
     this.state.availability[loan.resourceId] = (this.state.availability[loan.resourceId] ?? 0) + 1
+    this.promoteNextHold(loan.resourceId)
     this.commit()
     return returned
+  }
+
+  /**
+   * A returned copy satisfies the front of the reservation queue.
+   *
+   * Koha does this itself; the demo backend mirrors it so the hold-ready
+   * notification is reachable without a live ILMS behind the app.
+   */
+  private promoteNextHold(resourceId: string) {
+    const queue = this.state.holds
+      .filter((h) => h.resourceId === resourceId && h.status === 'pending')
+      .sort((a, b) => a.queuePosition - b.queuePosition || a.placedAt.localeCompare(b.placedAt))
+
+    const next = queue[0]
+    if (!next) return
+
+    this.state.holds = this.state.holds.map((hold) =>
+      hold.id === next.id
+        ? {
+            ...hold,
+            status: 'ready' as const,
+            queuePosition: 0,
+            // Collection window: uncollected items go back on the shelf.
+            expiresAt: addDays(new Date(), 7).toISOString(),
+          }
+        : hold.resourceId === resourceId && hold.status === 'pending'
+          ? { ...hold, queuePosition: Math.max(1, hold.queuePosition - 1) }
+          : hold,
+    )
   }
 
   async placeHold(resourceId: string): Promise<Hold> {

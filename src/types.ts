@@ -24,8 +24,6 @@ export interface PrivacySettings {
   profileVisible: boolean
   /** Reading activity contributes to trending / feed (always de-identified). */
   shareActivity: boolean
-  /** Appear on department XP standings. */
-  showOnLeaderboard: boolean
 }
 
 export interface NotificationPrefs {
