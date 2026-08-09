@@ -2,7 +2,9 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [main]
+    # `claude/**` is here so the branch can be previewed before it is merged.
+    # Drop it once this lands on main.
+    branches: [main, 'claude/**']
   workflow_dispatch:
 
 permissions:
@@ -30,6 +32,16 @@ jobs:
           # Project sites are served from /<repo>/, so the bundle, the service
           # worker scope and the manifest all need that prefix.
           REACH_BASE: /${{ github.event.repository.name }}/
+
+      # Pages has no SPA rewrite: a deep link like /REACH-library/search would
+      # 404 on first visit, before the service worker is installed. Serving the
+      # app shell as the 404 page makes the router pick the route up instead.
+      - run: cp dist/index.html dist/404.html
+
+      # Jekyll would otherwise strip files and folders beginning with an
+      # underscore out of the published site.
+      - run: touch dist/.nojekyll
+
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
