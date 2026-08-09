@@ -36,7 +36,7 @@ export function HelpScreen() {
                 {label}
                 {cap ? <span className="muted"> · up to {cap}×/day</span> : null}
               </span>
-              <span className="tag tag--gold">+{xp} XP</span>
+              <span className="tag tag--award">+{xp} XP</span>
             </div>
           ))}
           <hr className="divider" />

@@ -39,7 +39,7 @@ export function OnboardingScreen() {
           ].map(([label, xp]) => (
             <li key={label as string} className="row row--between">
               <span>{label}</span>
-              <span className="tag tag--gold">+{xp} XP</span>
+              <span className="tag tag--award">+{xp} XP</span>
             </li>
           ))}
         </ul>

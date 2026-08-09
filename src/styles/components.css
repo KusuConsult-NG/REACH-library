@@ -83,8 +83,8 @@
   height: 18px;
   padding: 0 4px;
   border-radius: var(--radius-pill);
-  background: var(--gold-600);
-  color: #ffffff;
+  background: var(--award-600);
+  color: var(--surface-raised);
   font-size: 0.7rem;
   font-weight: 700;
   line-height: 18px;
@@ -307,9 +307,9 @@
 }
 
 .iconbtn[aria-pressed='true'] {
-  background: var(--gold-100);
-  border-color: var(--gold-600);
-  color: var(--gold-700);
+  background: var(--award-100);
+  border-color: var(--award-600);
+  color: var(--award-700);
 }
 
 /* ---------------------------------------------------------------- forms -- */
@@ -477,9 +477,9 @@
   color: var(--info-700);
 }
 
-.tag--gold {
-  background: var(--gold-100);
-  color: var(--gold-700);
+.tag--award {
+  background: var(--award-100);
+  color: var(--award-700);
 }
 
 /* -------------------------------------------------------------- xp / hud -- */
@@ -802,8 +802,8 @@
 }
 
 .listitem__icon--due {
-  background: var(--gold-100);
-  color: var(--gold-700);
+  background: var(--award-100);
+  color: var(--award-700);
 }
 .listitem__icon--overdue {
   background: var(--danger-100);
@@ -869,8 +869,8 @@
   padding: var(--space-2) var(--space-4);
   font-size: 0.82rem;
   font-weight: 600;
-  background: var(--gold-100);
-  color: var(--gold-700);
+  background: var(--award-100);
+  color: var(--award-700);
 }
 
 .banner--sync {
@@ -897,7 +897,7 @@
   gap: var(--space-3);
   padding: var(--space-3) var(--space-4);
   border-radius: var(--radius);
-  background: #0d1c27;
+  background: #0c2342;
   color: #fff;
   box-shadow: var(--shadow-lg);
   font-size: 0.88rem;
@@ -921,7 +921,7 @@
   color: #04160c;
 }
 .toast--xp {
-  background: linear-gradient(120deg, #0e6ba8, #1180c4);
+  background: linear-gradient(120deg, #0369a1, #0284c7);
   color: #fff;
 }
 
@@ -933,8 +933,8 @@
   height: 30px;
   padding: 0 8px;
   border-radius: var(--radius-pill);
-  background: var(--gold-500);
-  color: #2a1f05;
+  background: var(--award-600);
+  color: var(--surface-raised);
   font-weight: 750;
   font-size: 0.8rem;
 }
@@ -946,7 +946,7 @@
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  background: rgb(6 24 38 / 55%);
+  background: rgb(6 20 38 / 60%);
 }
 
 .sheet__panel {

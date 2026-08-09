@@ -251,7 +251,7 @@ export function ProfileScreen() {
                         {activity.pending ? ' · pending sync' : ''}
                       </span>
                     </span>
-                    <span className={activity.xp > 0 ? 'tag tag--gold' : 'tag'}>
+                    <span className={activity.xp > 0 ? 'tag tag--award' : 'tag'}>
                       {activity.xp > 0 ? `+${activity.xp}` : '0'} XP
                     </span>
                   </li>

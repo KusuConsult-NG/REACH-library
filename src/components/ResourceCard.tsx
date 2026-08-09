@@ -48,7 +48,7 @@ export function ResourceCard({ resource }: { resource: Resource }) {
         <div className="resource__tags">
           <span className="tag">{TYPE_LABELS[resource.type]}</span>
           <AvailabilityTag resource={resource} />
-          {resource.repository ? <span className="tag tag--gold">Repository</span> : null}
+          {resource.repository ? <span className="tag tag--award">Repository</span> : null}
         </div>
       </div>
     </Link>

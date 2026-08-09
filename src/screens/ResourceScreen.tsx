@@ -105,7 +105,7 @@ export function ResourceScreen() {
       ) : null}
 
       {hold ? (
-        <div className="card" style={{ borderColor: 'var(--gold-600)' }}>
+        <div className="card" style={{ borderColor: 'var(--award-600)' }}>
           <p style={{ fontWeight: 650 }}>Reservation placed</p>
           <p className="small muted">
             You are number {hold.queuePosition} in the queue. We will notify you when it is ready for

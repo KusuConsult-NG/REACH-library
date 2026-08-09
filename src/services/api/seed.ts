@@ -7,11 +7,11 @@ import type {
   StudySpace,
 } from '@/types'
 
-/** Spine colours for generated covers — the university blues plus accents. */
+/** Spine colours for generated covers — the university sky/navy plus accents. */
 const C = {
-  blue: '#0E6BA8',
-  navy: '#0A3B5E',
-  gold: '#A9761A',
+  sky: '#0369A1',
+  navy: '#0C2342',
+  steel: '#3D5A80',
   clay: '#8C3A2B',
   indigo: '#2E3A76',
   teal: '#0F5B63',
@@ -49,7 +49,7 @@ export const RESOURCES: Resource[] = [
     copiesAvailable: 2,
     abstract:
       'A clinical and community-facing survey of tropical disease burden, control programmes and health-system delivery in West Africa, with case studies drawn from Plateau State.',
-    coverColor: C.blue,
+    coverColor: C.sky,
     accessCount: 412,
   },
   {
@@ -118,7 +118,7 @@ export const RESOURCES: Resource[] = [
     copiesAvailable: 3,
     abstract:
       'Determinate and indeterminate structures, influence lines, and matrix methods, worked with SI units and Nigerian design-code examples.',
-    coverColor: C.gold,
+    coverColor: C.steel,
     accessCount: 244,
   },
   {
@@ -167,7 +167,7 @@ export const RESOURCES: Resource[] = [
     repository: true,
     abstract:
       'Three-season trial of integrated soil fertility management across Plateau, Bauchi and Nasarawa states, reporting yield and cost-benefit outcomes.',
-    coverColor: C.gold,
+    coverColor: C.steel,
     accessCount: 158,
   },
   {
@@ -256,7 +256,7 @@ export const RESOURCES: Resource[] = [
     copiesAvailable: 0,
     abstract:
       'The standard undergraduate reference for systems anatomy and physiology, with clinical correlations and imaging plates.',
-    coverColor: C.blue,
+    coverColor: C.sky,
     accessCount: 812,
   },
   {
@@ -270,7 +270,7 @@ export const RESOURCES: Resource[] = [
     url: '/eresources/ebooks/musa-research-methods',
     abstract:
       'Design, sampling, instrument validity and mixed-method analysis, written around Nigerian fieldwork constraints.',
-    coverColor: C.gold,
+    coverColor: C.steel,
     accessCount: 355,
   },
   {
@@ -374,7 +374,7 @@ export const RESOURCES: Resource[] = [
     repository: true,
     abstract:
       'Twelve recorded lectures on ODE models in ecology and epidemiology, with downloadable problem sheets.',
-    coverColor: C.gold,
+    coverColor: C.steel,
     accessCount: 87,
   },
 ]

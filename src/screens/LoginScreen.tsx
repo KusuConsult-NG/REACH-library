@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { useAppDispatch, useAppSelector } from '@/app/hooks'
 import { clearError, login } from '@/features/auth/authSlice'
-import { UniversityLogo } from '@/components/UniversityLogo'
+import { UniversityWordmark } from '@/components/UniversityLogo'
 import { Spinner } from '@/components/primitives'
 import { usingLiveBackend } from '@/services/api'
 
@@ -33,15 +33,16 @@ export function LoginScreen() {
   return (
     <div className="auth">
       <div className="auth__inner">
-        <div className="auth__mark">
-          <UniversityLogo size={72} />
+        {/* Institution first, then the app it belongs to. */}
+        <div style={{ display: 'grid', placeItems: 'center' }}>
+          <UniversityWordmark />
         </div>
-        <h1 style={{ textAlign: 'center', fontSize: '1.8rem' }}>REACH</h1>
+        <h1 style={{ textAlign: 'center', fontSize: '1.8rem', marginTop: 'var(--space-5)' }}>REACH</h1>
         <p style={{ textAlign: 'center', opacity: 0.9, marginTop: 6 }}>
           Resource · Engagement · Academic · Community · Hub
         </p>
-        <p style={{ textAlign: 'center', opacity: 0.75, fontSize: '0.85rem', marginTop: 4 }}>
-          University of Jos Library
+        <p style={{ textAlign: 'center', opacity: 0.8, fontSize: '0.85rem', marginTop: 4 }}>
+          University Library
         </p>
 
         <form className="auth__card stack" onSubmit={onSubmit} noValidate>

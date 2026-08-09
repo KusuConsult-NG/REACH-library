@@ -152,33 +152,37 @@ A PWA must be served over HTTPS for the service worker to register.
 
 ### Colours
 
-Colours, radii, spacing and typography are tokens in
-[`src/styles/tokens.css`](src/styles/tokens.css). The palette follows the University of Jos
-colours — light blue and gold on white — with a deeper blue for actions and the dark theme.
+The palette follows the University of Jos branding used by the earlier REACH app
+([KusuConsult-NG/Reach-old](https://github.com/KusuConsult-NG/Reach-old)): **sky blue as the
+primary, deep navy as the accent, no gold**. Colours are tokens in
+[`src/styles/tokens.css`](src/styles/tokens.css).
+
+Two values from that app are used differently here, because they do not pass a contrast check:
+
+| Source value | Problem | What this app does |
+| --- | --- | --- |
+| `#0EA5E9` sky, with white text | 2.77:1 — fails AA | Sky is the chrome and tint colour; `#0369A1` (5.93:1) carries white text |
+| `#10B981` emerald, as text | 2.54:1 on white — fails AA | Emerald stays a fill; `#047857` is used for text |
 
 The chrome surfaces (`--topbar-*`, `--hero-*`, `--auth-*`) carry their own foreground token rather
-than inheriting `--text`, because the app bar and XP hero flip from light blue with navy text in
-light mode to deep blue with white text in dark mode. Both directions are checked at WCAG AA, so
-if you re-tint them, re-check the pairs.
+than inheriting `--text`, because the app bar and XP hero flip from sky blue with navy text in
+light mode to navy with white text in dark mode. Both directions are checked at AA, so if you
+re-tint them, re-check the pairs.
 
 ### The university emblem
 
-The app reads the emblem from **one file**: `public/logo-unijos.svg`. It is shown on the sign-in
-screen and in the app bar, and `src/components/UniversityLogo.tsx` falls back to the built-in REACH
-mark if the file is missing.
+The official assets, taken from the earlier app, live in two files:
 
-**The file currently in the repository is a stand-in, not the official logo** — it could not be
-downloaded from the environment this was built in. It is drawn from the elements the official
-emblem is documented to carry (open book, the Plateau hills, the Jos bridge) in the university's
-blue and gold. To use the real thing:
+| File | Where it appears |
+| --- | --- |
+| `public/logo-unijos.png` | The crest, cropped from the official wordmark and scaled. App bar, and anywhere a square mark is needed |
+| `public/logo-unijos-wordmark.png` | The full "University of Jos" wordmark. Sign-in screen |
 
-1. Drop the official asset in as `public/logo-unijos.svg`, or as `public/logo-unijos.png` (the
-   component tries the SVG first, then the PNG).
-2. Optionally re-run the icon generator for the installed-app icons in `public/icons/` — or replace
-   those PNGs with official artwork at 192×192 and 512×512, plus a 512×512 maskable version with
-   the mark inside the middle 80%.
-
-Nothing else needs to change.
+Replace either file and every surface picks it up — `UniversityLogo` and `UniversityWordmark` in
+[`src/components/UniversityLogo.tsx`](src/components/UniversityLogo.tsx) read from those paths and
+nothing else changes. The crest is also composited onto navy to produce the installed-app icons in
+`public/icons/` and the favicon; re-run the generator or replace those PNGs directly if the source
+artwork changes.
 
 ## Not in this build
 
