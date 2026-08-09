@@ -1,0 +1,142 @@
+import { useEffect } from 'react'
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { useAppDispatch, useAppSelector } from '@/app/hooks'
+import { dismissToast } from '@/features/ui/uiSlice'
+import { UniversityLogo } from './UniversityLogo'
+import {
+  BackIcon,
+  BellIcon,
+  CommunityIcon,
+  HomeIcon,
+  OfflineIcon,
+  ProfileIcon,
+  SearchIcon,
+  ToolsIcon,
+} from './icons'
+
+const TABS = [
+  { to: '/', label: 'Home', Icon: HomeIcon, end: true },
+  { to: '/search', label: 'Search', Icon: SearchIcon, end: false },
+  { to: '/community', label: 'Community', Icon: CommunityIcon, end: false },
+  { to: '/tools', label: 'Tools', Icon: ToolsIcon, end: false },
+  { to: '/profile', label: 'Profile', Icon: ProfileIcon, end: false },
+]
+
+/** Routes that get a back arrow rather than the greeting header. */
+const TITLES: Record<string, string> = {
+  '/search': 'Find resources',
+  '/community': 'Community',
+  '/tools': 'Library tools',
+  '/profile': 'My profile',
+  '/notifications': 'Notifications',
+  '/settings': 'Settings',
+  '/tools/spaces': 'Study spaces',
+  '/tools/librarian': 'Ask a librarian',
+  '/tools/map': 'Library map',
+  '/tools/help': 'Help & FAQs',
+}
+
+function ToastHost() {
+  const dispatch = useAppDispatch()
+  const toasts = useAppSelector((state) => state.ui.toasts)
+
+  useEffect(() => {
+    if (!toasts.length) return
+    const timers = toasts.map((t) => setTimeout(() => dispatch(dismissToast(t.id)), 3600))
+    return () => timers.forEach(clearTimeout)
+  }, [toasts, dispatch])
+
+  if (!toasts.length) return null
+
+  return (
+    <div className="toasts" role="status" aria-live="polite">
+      {toasts.map((t) => (
+        <div key={t.id} className={`toast toast--${t.tone}`}>
+          {t.xp ? <span className="toast__xp">+{t.xp}</span> : null}
+          <span>{t.message}</span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+export function AppShell() {
+  const location = useLocation()
+  const navigate = useNavigate()
+  const user = useAppSelector((state) => state.auth.user)
+  const unread = useAppSelector((state) => state.notifications.items.filter((n) => !n.read).length)
+  const online = useAppSelector((state) => state.ui.online)
+  const queued = useAppSelector((state) => state.ui.queue.length)
+  const syncing = useAppSelector((state) => state.ui.syncing)
+
+  const isDetail = location.pathname.startsWith('/resource/') || location.pathname.split('/').length > 2
+  const title = TITLES[location.pathname] ?? (isDetail ? 'Resource' : 'REACH')
+  const isHome = location.pathname === '/'
+
+  // Every navigation should start at the top of the new screen.
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior })
+  }, [location.pathname])
+
+  return (
+    <div className="shell">
+      <a className="skip-link" href="#main">
+        Skip to main content
+      </a>
+
+      <header className="topbar">
+        {isDetail ? (
+          <button type="button" className="topbar__action" onClick={() => navigate(-1)} aria-label="Go back">
+            <BackIcon size={20} />
+          </button>
+        ) : (
+          <UniversityLogo size={34} className="topbar__logo" />
+        )}
+
+        <div className="topbar__title">
+          {isHome ? (
+            <>
+              Hello, {user?.name.split(' ')[0] ?? 'there'}
+              <span className="topbar__sub">
+                {user?.department ?? 'University of Jos Library'}
+              </span>
+            </>
+          ) : (
+            title
+          )}
+        </div>
+
+        <NavLink to="/notifications" className="topbar__action" aria-label={`Notifications${unread ? `, ${unread} unread` : ''}`}>
+          <BellIcon size={20} />
+          {unread > 0 ? <span className="badge-dot">{unread > 9 ? '9+' : unread}</span> : null}
+        </NavLink>
+      </header>
+
+      {!online ? (
+        <div className="banner" role="status">
+          <OfflineIcon size={16} />
+          Offline — showing your saved library. {queued > 0 ? `${queued} action${queued === 1 ? '' : 's'} queued.` : ''}
+        </div>
+      ) : syncing ? (
+        <div className="banner banner--sync" role="status">
+          Syncing your offline activity…
+        </div>
+      ) : null}
+
+      <main className="shell__main" id="main">
+        <Outlet />
+      </main>
+
+      <nav className="tabbar" aria-label="Primary">
+        {TABS.map(({ to, label, Icon, end }) => (
+          <NavLink key={to} to={to} end={end} className="tabbar__item">
+            <Icon className="tabbar__icon" />
+            {label}
+          </NavLink>
+        ))}
+      </nav>
+
+      <ToastHost />
+    </div>
+  )
+}

@@ -1,0 +1,206 @@
+/*
+ * REACH design tokens.
+ *
+ * The palette follows the University of Jos colours — blue and gold on white.
+ * Brand colours sit in one place so the ramp can be swapped for the official
+ * brand specification without touching a component.
+ *
+ * Every foreground/background pairing below meets WCAG 2.1 AA contrast
+ * (4.5:1 for body text, 3:1 for large text and UI boundaries), in both themes.
+ */
+
+:root {
+  --brand-900: #062a44;
+  --brand-800: #0a3b5e;
+  --brand-700: #0e6ba8;
+  --brand-600: #1180c4;
+  --brand-500: #2a9bd8;
+  --brand-300: #7cc4e8;
+  --brand-100: #cfe8f7;
+  --brand-050: #edf6fc;
+
+  --gold-700: #8a6410;
+  --gold-600: #a97b18;
+  --gold-500: #c8952a;
+  --gold-100: #f7ecd5;
+
+  --danger-700: #9b2116;
+  --danger-600: #b8291c;
+  --danger-100: #fbe4e1;
+
+  --info-700: #1f4f8f;
+  --info-100: #e2ecfa;
+
+  --success-700: #1c6b3f;
+  --success-100: #dff2e6;
+
+  --surface: #ffffff;
+  --surface-raised: #ffffff;
+  --surface-sunken: #eff3f6;
+  --page: #f6fafc;
+  --border: #dde5eb;
+  --border-strong: #bfcdd8;
+
+  --text: #12202a;
+  --text-muted: #55697a;
+  --text-inverse: #ffffff;
+
+  --accent: var(--brand-700);
+  --accent-contrast: #ffffff;
+
+  /*
+   * Chrome surfaces. These carry their own foreground token rather than
+   * inheriting --text, because the app bar and XP hero flip from light blue
+   * with navy text in light mode to deep blue with white text in dark mode.
+   * Both directions are checked at AA.
+   */
+  --topbar-bg: #d6edfb;
+  --topbar-fg: #062a44;
+  --topbar-btn: rgb(6 42 68 / 9%);
+  --topbar-btn-hover: rgb(6 42 68 / 16%);
+
+  --hero-from: #dcf0fb;
+  --hero-to: #a8d8f2;
+  --hero-fg: #062a44;
+  --hero-tile: rgb(255 255 255 / 58%);
+  --hero-track: rgb(6 42 68 / 16%);
+  --hero-accent: #0e6ba8;
+
+  --auth-from: #edf6fc;
+  --auth-mid: #cfe8f7;
+  --auth-to: #a8d8f2;
+  --auth-fg: #062a44;
+
+  --radius-sm: 8px;
+  --radius: 14px;
+  --radius-lg: 22px;
+  --radius-pill: 999px;
+
+  --shadow-sm: 0 1px 2px rgb(9 32 44 / 8%);
+  --shadow: 0 4px 16px rgb(9 32 44 / 10%);
+  --shadow-lg: 0 12px 32px rgb(9 32 44 / 16%);
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+
+  --font: 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
+
+  --nav-height: 62px;
+  --content-max: 720px;
+  --transition: 160ms cubic-bezier(0.2, 0, 0.2, 1);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --surface: #101c26;
+    --surface-raised: #16232e;
+    --surface-sunken: #0c161e;
+    --page: #0a141b;
+    --border: #253745;
+    --border-strong: #385061;
+
+    --text: #e8f2f8;
+    --text-muted: #9db3c2;
+    --text-inverse: #062a44;
+
+    --brand-100: #123449;
+    --brand-050: #0e2735;
+    --gold-100: #3a2e14;
+    --danger-100: #3d1c18;
+    --info-100: #16283f;
+    --success-100: #14301f;
+
+    --brand-700: #58b6e8;
+    --brand-600: #4aacdf;
+    --gold-500: #e0b45c;
+    --gold-600: #e0b45c;
+    --gold-700: #f0d093;
+    --danger-600: #f08a7d;
+    --danger-700: #f08a7d;
+    --info-700: #8fc4ee;
+    --success-700: #7fd3a3;
+
+    --accent: #58b6e8;
+    --accent-contrast: #062a44;
+
+    --topbar-bg: #0a3b5e;
+    --topbar-fg: #ffffff;
+    --topbar-btn: rgb(255 255 255 / 14%);
+    --topbar-btn-hover: rgb(255 255 255 / 26%);
+
+    --hero-from: #0e5480;
+    --hero-to: #041c2c;
+    --hero-fg: #ffffff;
+    --hero-tile: rgb(255 255 255 / 12%);
+    --hero-track: rgb(255 255 255 / 22%);
+    --hero-accent: #e0b45c;
+
+    --auth-from: #0a141b;
+    --auth-mid: #0e2735;
+    --auth-to: #0a3b5e;
+    --auth-fg: #e8f2f8;
+
+    --shadow-sm: 0 1px 2px rgb(0 0 0 / 40%);
+    --shadow: 0 4px 16px rgb(0 0 0 / 45%);
+    --shadow-lg: 0 12px 32px rgb(0 0 0 / 55%);
+  }
+}
+
+:root[data-theme='dark'] {
+  --surface: #101c26;
+  --surface-raised: #16232e;
+  --surface-sunken: #0c161e;
+  --page: #0a141b;
+  --border: #253745;
+  --border-strong: #385061;
+
+  --text: #e8f2f8;
+  --text-muted: #9db3c2;
+  --text-inverse: #062a44;
+
+  --brand-100: #123449;
+  --brand-050: #0e2735;
+  --gold-100: #3a2e14;
+  --danger-100: #3d1c18;
+  --info-100: #16283f;
+  --success-100: #14301f;
+
+  --brand-700: #58b6e8;
+  --brand-600: #4aacdf;
+  --gold-500: #e0b45c;
+  --gold-600: #e0b45c;
+  --gold-700: #f0d093;
+  --danger-600: #f08a7d;
+  --danger-700: #f08a7d;
+  --info-700: #8fc4ee;
+  --success-700: #7fd3a3;
+
+  --accent: #58b6e8;
+  --accent-contrast: #062a44;
+
+  --topbar-bg: #0a3b5e;
+  --topbar-fg: #ffffff;
+  --topbar-btn: rgb(255 255 255 / 14%);
+  --topbar-btn-hover: rgb(255 255 255 / 26%);
+
+  --hero-from: #0e5480;
+  --hero-to: #041c2c;
+  --hero-fg: #ffffff;
+  --hero-tile: rgb(255 255 255 / 12%);
+  --hero-track: rgb(255 255 255 / 22%);
+  --hero-accent: #e0b45c;
+
+  --auth-from: #0a141b;
+  --auth-mid: #0e2735;
+  --auth-to: #0a3b5e;
+  --auth-fg: #e8f2f8;
+
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 40%);
+  --shadow: 0 4px 16px rgb(0 0 0 / 45%);
+  --shadow-lg: 0 12px 32px rgb(0 0 0 / 55%);
+}

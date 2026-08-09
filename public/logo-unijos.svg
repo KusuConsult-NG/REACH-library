@@ -1,0 +1,37 @@
+<!--
+  University of Jos emblem slot.
+
+  This file is a STAND-IN, not the university's official logo — it could not be
+  downloaded from this environment. It is drawn from the elements the official
+  emblem is documented to carry: the open book (academic pursuit), the rocky
+  hills of the Plateau, and the Jos bridge, in the university's blue and gold.
+
+  To use the real thing: replace this single file with the official asset,
+  keeping the name `logo-unijos.svg` (a PNG works too — see README). Every
+  surface that shows the emblem reads from here, so nothing else changes.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-label="University of Jos emblem">
+  <circle cx="48" cy="48" r="46" fill="#0E6BA8" />
+  <circle cx="48" cy="48" r="46" fill="none" stroke="#C8952A" stroke-width="3" />
+  <circle cx="48" cy="48" r="39" fill="#9AD3F0" />
+
+  <!-- Plateau hills -->
+  <path
+    d="M9 62 L22 42 L31 52 L42 32 L53 50 L62 40 L74 58 L87 62 Z"
+    fill="#062A44"
+  />
+
+  <!-- Jos bridge: deck and arches -->
+  <path d="M12 60 H84" stroke="#C8952A" stroke-width="3.4" stroke-linecap="round" fill="none" />
+  <path
+    d="M18 60 A9 9 0 0 1 36 60 M39 60 A9 9 0 0 1 57 60 M60 60 A9 9 0 0 1 78 60"
+    fill="none"
+    stroke="#C8952A"
+    stroke-width="2.6"
+  />
+
+  <!-- Open book -->
+  <path d="M48 70 C41 65 32 65 25 68 L25 82 C32 79 41 79 48 84 Z" fill="#ffffff" />
+  <path d="M48 70 C55 65 64 65 71 68 L71 82 C64 79 55 79 48 84 Z" fill="#EDF6FC" />
+  <path d="M48 70 V84" stroke="#0A3B5E" stroke-width="2" stroke-linecap="round" />
+</svg>
