@@ -125,6 +125,9 @@ export function SettingsScreen() {
         <div className="section__head">
           <h2 id="appearance-heading">Appearance</h2>
         </div>
+        <p className="small muted" style={{ marginBottom: 'var(--space-3)' }}>
+          There is also a quick toggle in the header, next to notifications.
+        </p>
         <div className="wrap">
           {(['system', 'light', 'dark'] as const).map((option) => (
             <Chip key={option} pressed={theme === option} onClick={() => dispatch(setTheme(option))}>

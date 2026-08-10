@@ -1,11 +1,13 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAppDispatch, useAppSelector } from '@/app/hooks'
-import { dismissToast } from '@/features/ui/uiSlice'
+import { dismissToast, setTheme } from '@/features/ui/uiSlice'
 import { UniversityLogo } from './UniversityLogo'
 import {
   BackIcon,
   BellIcon,
+  MoonIcon,
+  SunIcon,
   CommunityIcon,
   HomeIcon,
   OfflineIcon,
@@ -60,9 +62,33 @@ function ToastHost() {
   )
 }
 
+/**
+ * What the user is actually looking at right now. `system` follows the device,
+ * so the toggle has to resolve it before deciding which way to flip.
+ */
+function useResolvedTheme(): 'light' | 'dark' {
+  const preference = useAppSelector((state) => state.ui.theme)
+  const [systemDark, setSystemDark] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia?.('(prefers-color-scheme: dark)').matches,
+  )
+
+  useEffect(() => {
+    const query = window.matchMedia?.('(prefers-color-scheme: dark)')
+    if (!query) return
+    const onChange = (event: MediaQueryListEvent) => setSystemDark(event.matches)
+    query.addEventListener('change', onChange)
+    return () => query.removeEventListener('change', onChange)
+  }, [])
+
+  if (preference === 'system') return systemDark ? 'dark' : 'light'
+  return preference
+}
+
 export function AppShell() {
   const location = useLocation()
   const navigate = useNavigate()
+  const dispatch = useAppDispatch()
+  const resolvedTheme = useResolvedTheme()
   const user = useAppSelector((state) => state.auth.user)
   const unread = useAppSelector((state) => state.notifications.items.filter((n) => !n.read).length)
   const online = useAppSelector((state) => state.ui.online)
@@ -105,6 +131,15 @@ export function AppShell() {
             title
           )}
         </div>
+
+        <button
+          type="button"
+          className="topbar__action"
+          aria-label={resolvedTheme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+          onClick={() => dispatch(setTheme(resolvedTheme === 'dark' ? 'light' : 'dark'))}
+        >
+          {resolvedTheme === 'dark' ? <SunIcon size={20} /> : <MoonIcon size={20} />}
+        </button>
 
         <NavLink to="/notifications" className="topbar__action" aria-label={`Notifications${unread ? `, ${unread} unread` : ''}`}>
           <BellIcon size={20} />
