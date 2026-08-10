@@ -6,30 +6,30 @@
  * defined once here so the ramp can be swapped for an official brand
  * specification without touching a component.
  *
- * Two of the source values do not survive a contrast check and are used
- * differently here: sky #0ea5e9 carries white text at only 2.77:1, so anything
- * bearing white text uses #0369a1 (5.93:1) and sky becomes the light chrome
- * and tint colour instead. Likewise the emerald #10b981 is a fill, never text.
+ * The ramp is deliberately light — pale sky surfaces, near-white backgrounds.
+ * The floor on how light the *primary* can go is set by white button text:
+ * #0077b6 is 4.87:1 against white, and anything lighter fails AA. Lighter
+ * blues are still used everywhere text sits on top of them in navy instead.
  *
  * Every foreground/background pairing below meets WCAG 2.1 AA (4.5:1 body,
  * 3:1 large text and UI boundaries), in both themes.
  */
 
 :root {
-  --brand-900: #0c2342; /* deep navy — the accent */
-  --brand-800: #075985;
-  --brand-700: #0369a1; /* deep sky — anything carrying white text */
-  --brand-600: #0284c7;
-  --brand-500: #0ea5e9; /* sky — the brand hue */
-  --brand-300: #7dd3fc;
-  --brand-100: #bae6fd;
-  --brand-050: #e0f2fe;
+  --brand-900: #0f3557; /* navy — the accent, and text on pale blue */
+  --brand-800: #045c8a;
+  --brand-700: #0077b6; /* the lightest blue that still carries white text */
+  --brand-600: #0d92d2;
+  --brand-500: #38b6f0;
+  --brand-300: #9bdcfb;
+  --brand-100: #cdedfd;
+  --brand-050: #f2fafe;
 
   /* Rewards and XP. Navy replaces gold, following the earlier app. */
-  --award-700: #0c2342;
-  --award-600: #0c2342;
-  --award-500: #0369a1;
-  --award-100: #dbeafe;
+  --award-700: #0f3557;
+  --award-600: #0f3557;
+  --award-500: #0077b6;
+  --award-100: #dbeefb;
 
   --danger-700: #b91c1c;
   --danger-600: #c62828;
@@ -43,49 +43,50 @@
 
   --surface: #ffffff;
   --surface-raised: #ffffff;
-  --surface-sunken: #f1f5f9;
-  --page: #f8fafc;
-  --border: #e2e8f0;
-  --border-strong: #cbd5e1;
+  --surface-sunken: #f0f7fb;
+  --page: #f7fcff;
+  --border: #e2eef5;
+  --border-strong: #c4dcea;
 
-  --text: #0f172a;
-  --text-muted: #52657b;
+  --text: #10293d;
+  --text-muted: #4e6c82;
   --text-inverse: #ffffff;
 
   --accent: var(--brand-700);
   --accent-contrast: #ffffff;
-  --focus: #0c2342;
+  --focus: #0f3557;
 
   /*
    * Chrome surfaces. These carry their own foreground token rather than
-   * inheriting --text, because the app bar and XP hero flip from sky blue with
-   * navy text in light mode to navy with white text in dark mode.
+   * inheriting --text, because the app bar and XP hero flip from pale sky with
+   * navy text in light mode to deep blue with white text in dark mode.
    */
-  --topbar-bg: #e0f2fe;
-  --topbar-fg: #0c2342;
-  --topbar-btn: rgb(12 35 66 / 9%);
-  --topbar-btn-hover: rgb(12 35 66 / 16%);
+  --topbar-bg: #dff2fe;
+  --topbar-fg: #0f3557;
+  --topbar-btn: rgb(15 53 87 / 9%);
+  --topbar-btn-hover: rgb(15 53 87 / 16%);
 
-  --hero-from: #e0f2fe;
-  --hero-to: #7dd3fc;
-  --hero-fg: #0c2342;
-  --hero-tile: rgb(255 255 255 / 58%);
-  --hero-track: rgb(12 35 66 / 16%);
-  --hero-accent: #0c2342;
+  --hero-from: #ebf7fe;
+  --hero-to: #a5e0fd;
+  --hero-fg: #0f3557;
+  --hero-tile: rgb(255 255 255 / 62%);
+  --hero-track: rgb(15 53 87 / 15%);
+  --hero-accent: #0077b6;
 
-  --auth-from: #f0f9ff;
-  --auth-mid: #bae6fd;
-  --auth-to: #7dd3fc;
-  --auth-fg: #0c2342;
+  /* The sign-in screen stays near-white, so the app opens light, not dark. */
+  --auth-from: #ffffff;
+  --auth-mid: #ebf7fe;
+  --auth-to: #cdedfd;
+  --auth-fg: #0f3557;
 
   --radius-sm: 8px;
   --radius: 14px;
   --radius-lg: 22px;
   --radius-pill: 999px;
 
-  --shadow-sm: 0 1px 2px rgb(12 35 66 / 8%);
-  --shadow: 0 4px 16px rgb(12 35 66 / 10%);
-  --shadow-lg: 0 12px 32px rgb(12 35 66 / 18%);
+  --shadow-sm: 0 1px 2px rgb(15 53 87 / 7%);
+  --shadow: 0 4px 16px rgb(15 53 87 / 9%);
+  --shadow-lg: 0 12px 32px rgb(15 53 87 / 16%);
 
   --space-1: 4px;
   --space-2: 8px;
@@ -104,54 +105,54 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
-    --surface: #0c1e33;
-    --surface-raised: #102a44;
-    --surface-sunken: #061020;
-    --page: #071426;
-    --border: #1e3a55;
-    --border-strong: #315474;
+    --surface: #10263a;
+    --surface-raised: #16314a;
+    --surface-sunken: #08131f;
+    --page: #0b1b2a;
+    --border: #24405c;
+    --border-strong: #35597c;
 
-    --text: #e2f2fb;
-    --text-muted: #9ab8cc;
-    --text-inverse: #072033;
+    --text: #e6f4fd;
+    --text-muted: #a2bdd1;
+    --text-inverse: #05202f;
 
-    --brand-100: #10263f;
-    --brand-050: #0d2033;
-    --award-100: #10263f;
+    --brand-100: #12314b;
+    --brand-050: #12293f;
+    --award-100: #12314b;
     --danger-100: #3b1414;
     --info-100: #10233d;
     --success-100: #06301f;
 
-    --brand-700: #38bdf8;
-    --brand-600: #22a7ea;
-    --award-700: #7dd3fc;
-    --award-600: #38bdf8;
-    --award-500: #38bdf8;
+    --brand-700: #4fc3f7;
+    --brand-600: #38b0e8;
+    --award-700: #9bdcfb;
+    --award-600: #4fc3f7;
+    --award-500: #4fc3f7;
     --danger-600: #fca5a5;
     --danger-700: #fca5a5;
     --info-700: #93c5fd;
     --success-700: #6ee7b7;
 
-    --accent: #38bdf8;
-    --accent-contrast: #072033;
-    --focus: #7dd3fc;
+    --accent: #4fc3f7;
+    --accent-contrast: #05202f;
+    --focus: #9bdcfb;
 
-    --topbar-bg: #0c2342;
+    --topbar-bg: #14416a;
     --topbar-fg: #ffffff;
     --topbar-btn: rgb(255 255 255 / 14%);
     --topbar-btn-hover: rgb(255 255 255 / 26%);
 
-    --hero-from: #0b3a5c;
-    --hero-to: #071426;
+    --hero-from: #175682;
+    --hero-to: #0b1b2a;
     --hero-fg: #ffffff;
     --hero-tile: rgb(255 255 255 / 12%);
     --hero-track: rgb(255 255 255 / 22%);
-    --hero-accent: #38bdf8;
+    --hero-accent: #4fc3f7;
 
-    --auth-from: #071426;
-    --auth-mid: #0d2033;
-    --auth-to: #0c2342;
-    --auth-fg: #e2f2fb;
+    --auth-from: #0b1b2a;
+    --auth-mid: #12314b;
+    --auth-to: #17456b;
+    --auth-fg: #e6f4fd;
 
     --shadow-sm: 0 1px 2px rgb(0 0 0 / 40%);
     --shadow: 0 4px 16px rgb(0 0 0 / 45%);
@@ -160,54 +161,54 @@
 }
 
 :root[data-theme='dark'] {
-  --surface: #0c1e33;
-  --surface-raised: #102a44;
-  --surface-sunken: #061020;
-  --page: #071426;
-  --border: #1e3a55;
-  --border-strong: #315474;
+  --surface: #10263a;
+  --surface-raised: #16314a;
+  --surface-sunken: #08131f;
+  --page: #0b1b2a;
+  --border: #24405c;
+  --border-strong: #35597c;
 
-  --text: #e2f2fb;
-  --text-muted: #9ab8cc;
-  --text-inverse: #072033;
+  --text: #e6f4fd;
+  --text-muted: #a2bdd1;
+  --text-inverse: #05202f;
 
-  --brand-100: #10263f;
-  --brand-050: #0d2033;
-  --award-100: #10263f;
+  --brand-100: #12314b;
+  --brand-050: #12293f;
+  --award-100: #12314b;
   --danger-100: #3b1414;
   --info-100: #10233d;
   --success-100: #06301f;
 
-  --brand-700: #38bdf8;
-  --brand-600: #22a7ea;
-  --award-700: #7dd3fc;
-  --award-600: #38bdf8;
-  --award-500: #38bdf8;
+  --brand-700: #4fc3f7;
+  --brand-600: #38b0e8;
+  --award-700: #9bdcfb;
+  --award-600: #4fc3f7;
+  --award-500: #4fc3f7;
   --danger-600: #fca5a5;
   --danger-700: #fca5a5;
   --info-700: #93c5fd;
   --success-700: #6ee7b7;
 
-  --accent: #38bdf8;
-  --accent-contrast: #072033;
-  --focus: #7dd3fc;
+  --accent: #4fc3f7;
+  --accent-contrast: #05202f;
+  --focus: #9bdcfb;
 
-  --topbar-bg: #0c2342;
+  --topbar-bg: #14416a;
   --topbar-fg: #ffffff;
   --topbar-btn: rgb(255 255 255 / 14%);
   --topbar-btn-hover: rgb(255 255 255 / 26%);
 
-  --hero-from: #0b3a5c;
-  --hero-to: #071426;
+  --hero-from: #175682;
+  --hero-to: #0b1b2a;
   --hero-fg: #ffffff;
   --hero-tile: rgb(255 255 255 / 12%);
   --hero-track: rgb(255 255 255 / 22%);
-  --hero-accent: #38bdf8;
+  --hero-accent: #4fc3f7;
 
-  --auth-from: #071426;
-  --auth-mid: #0d2033;
-  --auth-to: #0c2342;
-  --auth-fg: #e2f2fb;
+  --auth-from: #0b1b2a;
+  --auth-mid: #12314b;
+  --auth-to: #17456b;
+  --auth-fg: #e6f4fd;
 
   --shadow-sm: 0 1px 2px rgb(0 0 0 / 40%);
   --shadow: 0 4px 16px rgb(0 0 0 / 45%);

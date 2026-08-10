@@ -196,7 +196,7 @@ export function SearchScreen() {
       ) : null}
 
       {status === 'loading' ? (
-        <ul className="stack stack--tight">
+        <ul className="stack stack--tight results">
           {[0, 1, 2, 3].map((i) => (
             <li key={i} className="resource">
               <Skeleton height={72} width={52} />
@@ -224,7 +224,7 @@ export function SearchScreen() {
           />
         </div>
       ) : (
-        <ul className="stack stack--tight">
+        <ul className="stack stack--tight results">
           {results.map((resource) => (
             <li key={resource.id}>
               <ResourceCard resource={resource} />

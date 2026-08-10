@@ -40,7 +40,8 @@ export function HomeScreen() {
   const hours = todayHours()
 
   return (
-    <div className="stack" style={{ gap: 'var(--space-5)' }}>
+    <div className="dashboard">
+      <div className="dashboard__main">
       <XpCard
         info={info}
         weeklyXp={weeklyXp}
@@ -171,6 +172,9 @@ export function HomeScreen() {
         </section>
       ) : null}
 
+      </div>
+
+      <aside className="dashboard__side" aria-label="Around the library">
       <section className="section" aria-labelledby="trending-heading">
         <div className="section__head">
           <h2 id="trending-heading">Trending in the library</h2>
@@ -232,6 +236,7 @@ export function HomeScreen() {
           </span>
         </Link>
       </section>
+      </aside>
     </div>
   )
 }

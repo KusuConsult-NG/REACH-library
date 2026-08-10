@@ -9,8 +9,8 @@ import type {
 
 /** Spine colours for generated covers — the university sky/navy plus accents. */
 const C = {
-  sky: '#0369A1',
-  navy: '#0C2342',
+  sky: '#0077B6',
+  navy: '#0F3557',
   steel: '#3D5A80',
   clay: '#8C3A2B',
   indigo: '#2E3A76',
@@ -18,6 +18,14 @@ const C = {
   plum: '#5B2C57',
 }
 
+/**
+ * Subject areas a member can follow for new-resource alerts.
+ *
+ * The first ten are the broad faculty groupings the catalogue records are
+ * classified under, so they must keep these exact strings — the search filter
+ * matches on them. The rest are finer-grained areas people actually think in
+ * terms of when choosing what to be told about.
+ */
 export const SUBJECT_AREAS = [
   'Medicine & Health Sciences',
   'Law',
@@ -29,6 +37,30 @@ export const SUBJECT_AREAS = [
   'Arts & Humanities',
   'Management Sciences',
   'Environmental Sciences',
+  'Pharmaceutical Sciences',
+  'Nursing Science',
+  'Public Health',
+  'Veterinary Medicine',
+  'Computer Science',
+  'Mathematics & Statistics',
+  'Chemistry',
+  'Physics',
+  'Biological Sciences',
+  'Geosciences & Mining',
+  'Architecture & Built Environment',
+  'Economics',
+  'Accounting & Finance',
+  'Business Administration',
+  'Political Science',
+  'Sociology & Anthropology',
+  'Psychology',
+  'History & International Studies',
+  'Languages & Linguistics',
+  'Religious Studies',
+  'Theatre & Film Arts',
+  'Library & Information Science',
+  'Physical & Health Education',
+  'Geography & Planning',
 ]
 
 export const RESOURCES: Resource[] = [

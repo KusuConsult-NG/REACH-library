@@ -133,31 +133,17 @@
   height: 22px;
 }
 
-@media (min-width: 900px) {
-  .shell__main {
-    max-width: 860px;
-    padding-bottom: var(--space-7);
-    padding-left: var(--space-6);
-    padding-right: var(--space-6);
-  }
+.dashboard,
+.dashboard__main,
+.dashboard__side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
 
-  .tabbar {
-    top: 0;
-    right: auto;
-    bottom: 0;
-    width: 96px;
-    grid-template-columns: 1fr;
-    grid-auto-rows: max-content;
-    align-content: start;
-    gap: var(--space-2);
-    padding-top: calc(var(--space-7) + var(--space-5));
-    border-top: 0;
-    border-right: 1px solid var(--border);
-  }
-
-  .shell {
-    padding-left: 96px;
-  }
+/* The brand block belongs to the desktop sidebar only. */
+.tabbar__brand {
+  display: none;
 }
 
 /* ---------------------------------------------------------------- cards -- */
@@ -897,7 +883,7 @@
   gap: var(--space-3);
   padding: var(--space-3) var(--space-4);
   border-radius: var(--radius);
-  background: #0c2342;
+  background: #0f3557;
   color: #fff;
   box-shadow: var(--shadow-lg);
   font-size: 0.88rem;
@@ -921,7 +907,7 @@
   color: #04160c;
 }
 .toast--xp {
-  background: linear-gradient(120deg, #0369a1, #0284c7);
+  background: linear-gradient(120deg, #0077b6, #0d92d2);
   color: #fff;
 }
 
@@ -946,7 +932,7 @@
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  background: rgb(6 20 38 / 60%);
+  background: rgb(15 53 87 / 45%);
 }
 
 .sheet__panel {
@@ -1142,4 +1128,154 @@
   background: var(--brand-050);
   border-color: var(--brand-100);
   color: var(--brand-700);
+}
+
+/* ---------------------------------------------------------- desktop app -- */
+
+/*
+ * Above 1024px this stops being a phone layout: the tab bar becomes a labelled
+ * sidebar, the header gets room to breathe, and the dashboard splits into a
+ * working column and a context rail. Below that it stays a bottom tab bar,
+ * which is the right control on a handset.
+ */
+@media (min-width: 1024px) {
+  .shell {
+    padding-left: 264px;
+  }
+
+  .tabbar {
+    top: 0;
+    right: auto;
+    bottom: 0;
+    width: 264px;
+    grid-template-columns: 1fr;
+    grid-auto-rows: max-content;
+    align-content: start;
+    gap: 2px;
+    padding: var(--space-5) var(--space-3);
+    background: var(--surface-raised);
+    border-top: 0;
+    border-right: 1px solid var(--border);
+  }
+
+  .tabbar__brand {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-2) var(--space-3) var(--space-5);
+    font-size: 0.78rem;
+    line-height: 1.3;
+    color: var(--text-muted);
+  }
+
+  .tabbar__brand strong {
+    display: block;
+    font-size: 1.15rem;
+    letter-spacing: -0.01em;
+    color: var(--text);
+  }
+
+  .tabbar__item {
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: var(--space-3);
+    min-height: 46px;
+    padding: 0 var(--space-3);
+    border-radius: var(--radius-sm);
+    font-size: 0.92rem;
+  }
+
+  .tabbar__item:hover {
+    background: var(--surface-sunken);
+    color: var(--text);
+  }
+
+  .tabbar__item[aria-current='page'] {
+    background: var(--brand-050);
+    color: var(--brand-700);
+  }
+
+  .topbar {
+    padding: var(--space-5) var(--space-6) var(--space-4);
+    background: var(--page);
+    color: var(--text);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .topbar__logo {
+    display: none;
+  }
+
+  .topbar__title {
+    font-size: 1.55rem;
+    color: var(--text);
+  }
+
+  .topbar__sub {
+    font-size: 0.85rem;
+    opacity: 1;
+    color: var(--text-muted);
+  }
+
+  .topbar__action {
+    background: var(--surface-raised);
+    border: 1px solid var(--border);
+    color: var(--text);
+  }
+
+  .topbar__action:hover {
+    background: var(--surface-sunken);
+  }
+
+  .shell__main {
+    max-width: 1180px;
+    margin: 0;
+    padding: var(--space-5) var(--space-6) var(--space-7);
+  }
+
+  .dashboard {
+    display: grid;
+    grid-template-columns: minmax(0, 1.45fr) minmax(300px, 1fr);
+    align-items: start;
+    gap: var(--space-6);
+  }
+
+  /* Two records per row rather than one full-width band of whitespace. */
+  .results {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-3);
+  }
+
+  .results .resource {
+    height: 100%;
+  }
+
+  .banner {
+    padding-left: var(--space-6);
+  }
+
+  /* Toasts follow the content column rather than the whole window. */
+  .toasts {
+    left: auto;
+    right: var(--space-6);
+    bottom: var(--space-6);
+    transform: none;
+  }
+}
+
+/* Tablets: still a bottom bar, but the content can use the width. */
+@media (min-width: 700px) and (max-width: 1023px) {
+  .shell__main {
+    max-width: 100%;
+    padding-left: var(--space-6);
+    padding-right: var(--space-6);
+  }
+
+  .dashboard {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    gap: var(--space-5);
+  }
 }

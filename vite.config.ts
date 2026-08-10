@@ -25,8 +25,8 @@ export default defineConfig({
         short_name: 'REACH',
         description:
           'Resource, Engagement, Academic, Community, Hub — discover, borrow and earn XP with University of Jos Library.',
-        theme_color: '#0EA5E9',
-        background_color: '#0C2342',
+        theme_color: '#38B6F0',
+        background_color: '#F7FCFF',
         display: 'standalone',
         orientation: 'portrait',
         start_url: '.',

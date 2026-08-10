@@ -128,6 +128,16 @@ export function AppShell() {
       </main>
 
       <nav className="tabbar" aria-label="Primary">
+        {/* The sidebar identifies the app on desktop, where there is room for
+            it; on mobile the bar is icons only and this is hidden. */}
+        <div className="tabbar__brand" aria-hidden="true">
+          <UniversityLogo size={34} />
+          <span>
+            <strong>REACH</strong>
+            University of Jos Library
+          </span>
+        </div>
+
         {TABS.map(({ to, label, Icon, end }) => (
           <NavLink key={to} to={to} end={end} className="tabbar__item">
             <Icon className="tabbar__icon" />
