@@ -837,6 +837,23 @@
   background: var(--brand-050);
 }
 
+/* A row that goes somewhere: aligned centre for the chevron, and it reacts. */
+.listitem--link {
+  width: 100%;
+  align-items: center;
+  cursor: pointer;
+  transition: background var(--transition);
+}
+
+.listitem--link:hover {
+  background: var(--surface-sunken);
+}
+
+.listitem--link:hover .listitem__icon {
+  background: var(--brand-050);
+  color: var(--brand-700);
+}
+
 .listitem__icon {
   flex: none;
   display: grid;
@@ -1381,5 +1398,17 @@
 @media (min-width: 560px) {
   .rewardgrid {
     grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  }
+}
+
+/* The sixth nav item exists only where the bar is a sidebar with room for it. */
+.tabbar__item--desktop {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .tabbar__item--desktop {
+    display: flex;
+    margin-top: var(--space-4);
   }
 }

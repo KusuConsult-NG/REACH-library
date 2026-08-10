@@ -119,12 +119,31 @@ describe('REACH app', () => {
     await signIn(user)
 
     await user.click(screen.getByRole('link', { name: /^profile$/i }))
-    await user.click(await screen.findByRole('link', { name: /settings/i }))
+    // Scoped to the page: Settings is also a permanent item in the desktop
+    // sidebar, so an unscoped query now matches two legitimate links.
+    const page = within(screen.getByRole('main'))
+    await user.click(await page.findByRole('link', { name: /^settings$/i }))
 
     const toggle = await screen.findByRole('switch', { name: /discoverable profile/i })
     expect(store.getState().auth.privacy.profileVisible).toBe(true)
     await user.click(toggle)
     expect(store.getState().auth.privacy.profileVisible).toBe(false)
+  })
+
+  it('opens a named settings group straight from the profile', async () => {
+    const user = userEvent.setup()
+    const store = makeStore()
+    renderApp(store)
+    await signIn(user)
+
+    await user.click(screen.getByRole('link', { name: /^profile$/i }))
+    // The complaint this guards against: settings were reachable only through
+    // one unlabelled icon, so nobody knew subject alerts could be changed.
+    const page = within(screen.getByRole('main'))
+    await user.click(await page.findByRole('link', { name: /subject interests/i }))
+
+    expect(await screen.findByRole('heading', { name: /subject interests/i })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /^privacy$/i })).toBeInTheDocument()
   })
 
   it('surfaces the offline banner when connectivity drops', async () => {

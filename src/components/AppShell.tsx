@@ -13,6 +13,7 @@ import {
   OfflineIcon,
   ProfileIcon,
   SearchIcon,
+  SettingsIcon,
   ToolsIcon,
 } from './icons'
 
@@ -100,10 +101,21 @@ export function AppShell() {
   const title = TITLES[location.pathname] ?? (isDetail ? 'Resource' : 'REACH')
   const isHome = location.pathname === '/'
 
-  // Every navigation should start at the top of the new screen.
+  /**
+   * Every navigation starts at the top of the new screen — unless it carries an
+   * anchor, which is how the profile screen links straight to one group of
+   * settings rather than dropping you at the top of a long page to hunt.
+   */
   useEffect(() => {
+    if (location.hash) {
+      const target = document.getElementById(location.hash.slice(1))
+      if (target) {
+        target.scrollIntoView?.({ block: 'start', behavior: 'instant' as ScrollBehavior })
+        return
+      }
+    }
     window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior })
-  }, [location.pathname])
+  }, [location.pathname, location.hash])
 
   return (
     <div className="shell">
@@ -180,6 +192,14 @@ export function AppShell() {
             {label}
           </NavLink>
         ))}
+
+        {/* Desktop only: the phone bar is a fixed five columns, and a sixth
+            would squeeze the labels. On mobile, Settings is reached from the
+            profile screen, where it is a labelled row rather than an icon. */}
+        <NavLink to="/settings" className="tabbar__item tabbar__item--desktop">
+          <SettingsIcon className="tabbar__icon" />
+          Settings
+        </NavLink>
       </nav>
 
       <ToastHost />

@@ -162,10 +162,23 @@ export const FilterIcon = (p: IconProps) => (
   </Svg>
 )
 
+/**
+ * Sliders, not a gear. A cog is a circle with radiating spokes, which at 16-18px
+ * is the same shape as the sun used for the light-theme toggle a row above it.
+ */
 export const SettingsIcon = (p: IconProps) => (
   <Svg {...p}>
-    <circle cx="12" cy="12" r="3.2" />
-    <path d="M12 3.5v2.2M12 18.3v2.2M20.5 12h-2.2M5.7 12H3.5M18 6l-1.6 1.6M7.6 16.4 6 18M18 18l-1.6-1.6M7.6 7.6 6 6" />
+    <path d="M4 7h9M17 7h3M4 12h3M11 12h9M4 17h8M16 17h4" />
+    <circle cx="15" cy="7" r="2" />
+    <circle cx="9" cy="12" r="2" />
+    <circle cx="14" cy="17" r="2" />
+  </Svg>
+)
+
+export const LockIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <rect x="4.5" y="10.5" width="15" height="9.5" rx="2" />
+    <path d="M8 10.5V7.8a4 4 0 0 1 8 0v2.7" />
   </Svg>
 )
 

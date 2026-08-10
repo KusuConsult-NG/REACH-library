@@ -4,7 +4,16 @@ import { useAppDispatch, useAppSelector } from '@/app/hooks'
 import { XpCard } from '@/components/XpCard'
 import { ResourceCard } from '@/components/ResourceCard'
 import { EmptyState } from '@/components/primitives'
-import { BookIcon, SettingsIcon, StarIcon } from '@/components/icons'
+import {
+  BellIcon,
+  BookIcon,
+  BookmarkIcon,
+  ChevronIcon,
+  LockIcon,
+  MoonIcon,
+  SettingsIcon,
+  StarIcon,
+} from '@/components/icons'
 import { ACTIVITY_LABELS } from '@/config/xp'
 import { levelFromXp } from '@/features/xp/levels'
 import { xpEarnedInWeek } from '@/features/xp/xpSlice'
@@ -14,6 +23,40 @@ import { dueLabel, formatDate, relativeTime } from '@/utils/date'
 import { ROLE_LABELS } from '@/utils/labels'
 
 type Tab = 'loans' | 'history' | 'saved' | 'activity'
+
+/**
+ * The settings people actually go looking for, each opening its own group.
+ *
+ * `sub` says what the setting does, not what it is called — "Notifications"
+ * alone does not tell anyone that this is where due-date reminders get turned
+ * off.
+ */
+const SETTINGS_LINKS = [
+  {
+    to: '/settings#interests',
+    label: 'Subject interests',
+    sub: 'Change which subjects you get new-resource alerts about',
+    Icon: BookmarkIcon,
+  },
+  {
+    to: '/settings#notify',
+    label: 'Notifications',
+    sub: 'Due-date reminders, hold-ready alerts, XP milestones',
+    Icon: BellIcon,
+  },
+  {
+    to: '/settings#privacy',
+    label: 'Privacy',
+    sub: 'What other members can see about your activity',
+    Icon: LockIcon,
+  },
+  {
+    to: '/settings#appearance',
+    label: 'Appearance & storage',
+    sub: 'Light or dark, weekly XP goal, offline data',
+    Icon: MoonIcon,
+  },
+] as const
 
 export function ProfileScreen() {
   const dispatch = useAppDispatch()
@@ -53,18 +96,31 @@ export function ProfileScreen() {
               {user ? ROLE_LABELS[user.role] : ''} · {user?.department}
             </p>
             {user && user.faculty !== user.department ? (
-              <p className="small muted">{user.faculty}</p>
+              <p className="small muted">Faculty of {user.faculty}</p>
             ) : null}
           </div>
-          <Link to="/settings" className="iconbtn" aria-label="Settings">
-            <SettingsIcon size={20} />
+        </div>
+        {/*
+          The action sits on the meta line rather than beside the name: on a
+          narrow phone a pill up there costs the name half its width and wraps
+          it over two lines.
+        */}
+        <div
+          className="row row--between"
+          style={{ marginTop: 'var(--space-3)', flexWrap: 'wrap', gap: 'var(--space-2)' }}
+        >
+          {user ? (
+            <p className="small muted">
+              Borrower {user.borrowerNumber} · member since {formatDate(user.joinedAt)}
+            </p>
+          ) : (
+            <span />
+          )}
+          <Link to="/settings" className="btn btn--secondary btn--sm">
+            <SettingsIcon size={16} />
+            Settings
           </Link>
         </div>
-        {user ? (
-          <p className="small muted" style={{ marginTop: 'var(--space-3)' }}>
-            Borrower {user.borrowerNumber} · member since {formatDate(user.joinedAt)}
-          </p>
-        ) : null}
       </section>
 
       <XpCard
@@ -84,6 +140,36 @@ export function ProfileScreen() {
           <span className="quick__sub">Extra loans, printing, room priority</span>
         </span>
       </Link>
+
+      <section className="section" aria-labelledby="prefs-heading">
+        <div className="section__head">
+          <h2 id="prefs-heading">Settings</h2>
+          <Link className="section__link" to="/settings">
+            See all
+          </Link>
+        </div>
+        {/*
+          Each row opens the matching group directly. Settings holds seven
+          separate things, and a single unlabelled icon gave no clue that any of
+          them — subject alerts especially — could be changed at all.
+        */}
+        <ul className="card card--flush list">
+          {SETTINGS_LINKS.map(({ to, label, sub, Icon }) => (
+            <li key={to}>
+              <Link to={to} className="listitem listitem--link">
+                <span className="listitem__icon" aria-hidden="true">
+                  <Icon size={18} />
+                </span>
+                <span style={{ minWidth: 0, flex: 1 }}>
+                  <span className="resource__title">{label}</span>
+                  <span className="resource__meta">{sub}</span>
+                </span>
+                <ChevronIcon size={18} aria-hidden="true" />
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </section>
 
       {holds.length > 0 ? (
         <section className="section" aria-labelledby="holds-heading">

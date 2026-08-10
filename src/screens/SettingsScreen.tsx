@@ -19,7 +19,7 @@ export function SettingsScreen() {
 
   return (
     <div className="stack" style={{ gap: 'var(--space-5)' }}>
-      <section aria-labelledby="privacy-heading">
+      <section id="privacy" aria-labelledby="privacy-heading" style={{ scrollMarginTop: '84px' }}>
         <div className="section__head">
           <h2 id="privacy-heading">Privacy</h2>
         </div>
@@ -43,7 +43,7 @@ export function SettingsScreen() {
         </p>
       </section>
 
-      <section aria-labelledby="notify-heading">
+      <section id="notify" aria-labelledby="notify-heading" style={{ scrollMarginTop: '84px' }}>
         <div className="section__head">
           <h2 id="notify-heading">Notifications</h2>
         </div>
@@ -77,7 +77,7 @@ export function SettingsScreen() {
         </div>
       </section>
 
-      <section aria-labelledby="interests-heading">
+      <section id="interests" aria-labelledby="interests-heading" style={{ scrollMarginTop: '84px' }}>
         <div className="section__head">
           <h2 id="interests-heading">Subject interests</h2>
         </div>
@@ -97,7 +97,7 @@ export function SettingsScreen() {
         </div>
       </section>
 
-      <section aria-labelledby="goal-heading">
+      <section id="goal" aria-labelledby="goal-heading" style={{ scrollMarginTop: '84px' }}>
         <div className="section__head">
           <h2 id="goal-heading">Weekly XP goal</h2>
         </div>
@@ -121,7 +121,7 @@ export function SettingsScreen() {
         </div>
       </section>
 
-      <section aria-labelledby="appearance-heading">
+      <section id="appearance" aria-labelledby="appearance-heading" style={{ scrollMarginTop: '84px' }}>
         <div className="section__head">
           <h2 id="appearance-heading">Appearance</h2>
         </div>
@@ -137,7 +137,7 @@ export function SettingsScreen() {
         </div>
       </section>
 
-      <section aria-labelledby="app-heading">
+      <section id="app" aria-labelledby="app-heading" style={{ scrollMarginTop: '84px' }}>
         <div className="section__head">
           <h2 id="app-heading">App</h2>
         </div>
@@ -157,7 +157,7 @@ export function SettingsScreen() {
         </div>
       </section>
 
-      <section aria-labelledby="account-heading">
+      <section id="account" aria-labelledby="account-heading" style={{ scrollMarginTop: '84px' }}>
         <div className="section__head">
           <h2 id="account-heading">Account</h2>
         </div>
