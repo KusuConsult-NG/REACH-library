@@ -91,9 +91,38 @@ function profileFor(username: string): User {
     { department: 'Geography & Planning', faculty: 'Environmental Sciences' },
     { department: 'Accounting', faculty: 'Management Sciences' },
   ]
+
+  /**
+   * Matriculation numbers carry a faculty code — UJ/2021/CVE/0142 is a civil
+   * engineer. Honouring it keeps a demo account coherent with the number typed
+   * to create it; anything unrecognised still falls back to the hash.
+   */
+  const DEPARTMENT_CODES: Record<string, { department: string; faculty: string }> = {
+    cve: { department: 'Civil Engineering', faculty: 'Engineering' },
+    eng: { department: 'Electrical Engineering', faculty: 'Engineering' },
+    csc: { department: 'Computer Science', faculty: 'Natural Sciences' },
+    med: { department: 'Community Medicine', faculty: 'Medical Sciences' },
+    mbbs: { department: 'Community Medicine', faculty: 'Medical Sciences' },
+    nur: { department: 'Nursing Science', faculty: 'Medical Sciences' },
+    pha: { department: 'Pharmacology', faculty: 'Pharmaceutical Sciences' },
+    law: { department: 'Private & Property Law', faculty: 'Law' },
+    edu: { department: 'Curriculum Studies', faculty: 'Education' },
+    agr: { department: 'Agronomy', faculty: 'Agriculture' },
+    geo: { department: 'Geography & Planning', faculty: 'Environmental Sciences' },
+    acc: { department: 'Accounting', faculty: 'Management Sciences' },
+    mgt: { department: 'Business Management', faculty: 'Management Sciences' },
+    sci: { department: 'Chemistry', faculty: 'Natural Sciences' },
+    art: { department: 'English & Literary Studies', faculty: 'Arts' },
+    lib: { department: 'Library & Information Science', faculty: 'Education' },
+  }
+
   let hash = 0
   for (const ch of normalised) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0
-  const home = departments[hash % departments.length]
+
+  const codeMatch = normalised
+    .split(/[^a-z]+/)
+    .find((part) => part.length >= 3 && part in DEPARTMENT_CODES)
+  const home = codeMatch ? DEPARTMENT_CODES[codeMatch] : departments[hash % departments.length]
 
   // A matriculation number carries no name, so the demo backend assigns a
   // stable one from the credential's hash. A real deployment takes the name
@@ -108,11 +137,14 @@ function profileFor(username: string): User {
     'Oluwaseun Adebayo',
     'Rahila Musa',
   ]
+  // Honorifics and faculty codes are not names: "STAFF/LIB/0031" should not
+  // produce a member called "Staff Lib".
+  const NOT_A_NAME = new Set(['dr', 'prof', 'mr', 'mrs', 'ms', 'staff', 'pg', 'ug', ...Object.keys(DEPARTMENT_CODES)])
   const words = normalised
     .replace(/[^a-z]+/g, ' ')
     .trim()
     .split(/\s+/)
-    .filter((part) => part.length >= 3)
+    .filter((part) => part.length >= 3 && !NOT_A_NAME.has(part))
   // Two or more usable words look like a real name; a lone department code
   // ("CVE" out of UJ/2021/CVE/0142) does not.
   const name =
