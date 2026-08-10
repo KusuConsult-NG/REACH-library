@@ -14,6 +14,7 @@ import { LibrarianScreen } from '@/screens/LibrarianScreen'
 import { MapScreen } from '@/screens/MapScreen'
 import { HelpScreen } from '@/screens/HelpScreen'
 import { ProfileScreen } from '@/screens/ProfileScreen'
+import { RewardsScreen } from '@/screens/RewardsScreen'
 import { NotificationsScreen } from '@/screens/NotificationsScreen'
 import { SettingsScreen } from '@/screens/SettingsScreen'
 import { loadCirculation } from '@/features/circulation/circulationSlice'
@@ -99,6 +100,7 @@ export function App() {
         <Route path="tools/map" element={<MapScreen />} />
         <Route path="tools/help" element={<HelpScreen />} />
         <Route path="profile" element={<ProfileScreen />} />
+        <Route path="rewards" element={<RewardsScreen />} />
         <Route path="notifications" element={<NotificationsScreen />} />
         <Route path="settings" element={<SettingsScreen />} />
         <Route path="login" element={<Navigate to="/" replace />} />

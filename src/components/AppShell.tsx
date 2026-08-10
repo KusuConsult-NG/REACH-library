@@ -30,6 +30,7 @@ const TITLES: Record<string, string> = {
   '/community': 'Community',
   '/tools': 'Library tools',
   '/profile': 'My profile',
+  '/rewards': 'Spend your XP',
   '/notifications': 'Notifications',
   '/settings': 'Settings',
   '/tools/spaces': 'Study spaces',

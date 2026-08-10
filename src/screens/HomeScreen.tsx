@@ -4,7 +4,7 @@ import { useAppDispatch, useAppSelector } from '@/app/hooks'
 import { XpCard } from '@/components/XpCard'
 import { ResourceCard } from '@/components/ResourceCard'
 import { EmptyState } from '@/components/primitives'
-import { BookIcon, CalendarIcon, ClockIcon, HelpIcon, SearchIcon, TrendIcon } from '@/components/icons'
+import { BookIcon, CalendarIcon, ClockIcon, HelpIcon, SearchIcon, StarIcon, TrendIcon } from '@/components/icons'
 import { levelFromXp } from '@/features/xp/levels'
 import { xpEarnedInWeek } from '@/features/xp/xpSlice'
 import { renewWithSync } from '@/features/catalogue/actions'
@@ -99,6 +99,16 @@ export function HomeScreen() {
             <span>
               <span className="quick__label">Ask a librarian</span>
               <span className="quick__sub">Research consultation</span>
+            </span>
+          </Link>
+
+          <Link className="quick" to="/rewards">
+            <span className="quick__icon">
+              <StarIcon size={20} />
+            </span>
+            <span>
+              <span className="quick__label">Spend your XP</span>
+              <span className="quick__sub">Loans, printing, rooms</span>
             </span>
           </Link>
         </div>

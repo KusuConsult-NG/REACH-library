@@ -4,7 +4,16 @@ import type { Activity, ActivityKind } from '@/types'
 import { dayKey, weekKey } from '@/utils/date'
 
 export interface XpState {
+  /**
+   * Everything ever earned. Never decreases, so spending XP cannot cost you a
+   * level — this is what drives progression and the library's impact figures.
+   */
   totalXp: number
+  /**
+   * What is left to spend. Rises with the same earnings and falls on
+   * redemption. Kept separate from totalXp precisely so the two never fight.
+   */
+  balance: number
   activities: Activity[]
   weeklyGoal: number
   /** ISO weeks whose goal bonus has already been paid, so it pays once. */
@@ -16,6 +25,7 @@ export interface XpState {
 
 const initialState: XpState = {
   totalXp: 0,
+  balance: 0,
   activities: [],
   weeklyGoal: WEEKLY_XP_GOAL,
   bonusPaidWeeks: [],
@@ -75,6 +85,7 @@ const xpSlice = createSlice({
         state.activities.unshift(activity)
         if (state.activities.length > MAX_ACTIVITIES) state.activities.length = MAX_ACTIVITIES
         state.totalXp += activity.xp
+        state.balance += activity.xp
 
         const today = dayKey(activity.at)
         if (state.lastActiveDay !== today) {
@@ -111,11 +122,20 @@ const xpSlice = createSlice({
       const ids = new Set(action.payload)
       state.activities = state.activities.map((a) => (ids.has(a.id) ? { ...a, pending: false } : a))
     },
+    /** Deduct the cost of a redemption. Never touches totalXp. */
+    spend(state, action: PayloadAction<number>) {
+      state.balance = Math.max(0, state.balance - action.payload)
+    },
+    /** Refund a redemption that could not be fulfilled. */
+    refund(state, action: PayloadAction<number>) {
+      state.balance += action.payload
+    },
     resetXp() {
       return initialState
     },
   },
 })
 
-export const { award, markWeeklyBonusPaid, setWeeklyGoal, confirmPending, resetXp } = xpSlice.actions
+export const { award, markWeeklyBonusPaid, setWeeklyGoal, confirmPending, spend, refund, resetXp } =
+  xpSlice.actions
 export default xpSlice.reducer

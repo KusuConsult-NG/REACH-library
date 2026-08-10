@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { Accordion } from '@/components/primitives'
 import { FAQS } from '@/services/api/seed'
 import { XP_VALUES, DAILY_CAPS, LEVEL_TITLES } from '@/config/xp'
+import { REWARDS } from '@/config/rewards'
 
 export function HelpScreen() {
   return (
@@ -44,6 +45,32 @@ export function HelpScreen() {
             Meeting your weekly goal pays a bonus of {XP_VALUES.weekly_goal_bonus} XP. There are{' '}
             {LEVEL_TITLES.length} levels, from {LEVEL_TITLES[0]} to {LEVEL_TITLES[LEVEL_TITLES.length - 1]}.
             Daily caps exist so XP reflects real engagement rather than repeated taps.
+          </p>
+        </div>
+      </section>
+
+      <section aria-labelledby="spend-help">
+        <div className="section__head">
+          <h2 id="spend-help">Spending your XP</h2>
+        </div>
+        <div className="card stack stack--tight small">
+          <p>
+            You have two figures. <strong>Total XP</strong> is everything you have ever earned — it only
+            goes up, and it is what sets your level. <strong>Available to spend</strong> rises with the
+            same activity and falls when you redeem something, so redeeming never costs you a level.
+          </p>
+          <hr className="divider" />
+          {REWARDS.map((reward) => (
+            <div key={reward.id} className="row row--between">
+              <span>{reward.name}</span>
+              <span className="tag tag--award">{reward.cost.toLocaleString()} XP</span>
+            </div>
+          ))}
+          <hr className="divider" />
+          <p className="muted">
+            Redeeming issues a voucher code. Show it at the circulation desk before it expires. A voucher
+            belongs to whoever presents it, so you can give one to a friend — use “Give to someone” to send
+            them the code. XP itself cannot be transferred: it records your own use of the library.
           </p>
         </div>
       </section>

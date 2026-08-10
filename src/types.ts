@@ -108,6 +108,23 @@ export interface Activity {
   pending?: boolean
 }
 
+/** A reward that has been paid for and is waiting to be presented. */
+export interface Voucher {
+  id: string
+  rewardId: string
+  name: string
+  /** What the member paid, kept on the voucher so history survives price changes. */
+  cost: number
+  /** Bearer code shown to desk staff. Whoever presents it may claim it. */
+  code: string
+  issuedAt: string
+  expiresAt: string
+  status: 'active' | 'used' | 'expired'
+  usedAt?: string
+  /** Set when the member has passed the code to someone else. */
+  sharedAt?: string
+}
+
 export interface LevelInfo {
   level: number
   title: string

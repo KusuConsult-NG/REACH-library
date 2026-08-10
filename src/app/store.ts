@@ -4,11 +4,12 @@ import xp from '@/features/xp/xpSlice'
 import catalogue from '@/features/catalogue/catalogueSlice'
 import circulation from '@/features/circulation/circulationSlice'
 import notifications from '@/features/notifications/notificationsSlice'
+import rewards from '@/features/rewards/rewardsSlice'
 import social from '@/features/social/socialSlice'
 import ui, { uiInitialState } from '@/features/ui/uiSlice'
 import { readJson, writeJson } from '@/services/storage'
 
-const rootReducer = combineReducers({ auth, xp, catalogue, circulation, notifications, social, ui })
+const rootReducer = combineReducers({ auth, xp, catalogue, circulation, notifications, rewards, social, ui })
 
 /**
  * Slices worth restoring on next launch. Everything here is either the user's
@@ -16,7 +17,7 @@ const rootReducer = combineReducers({ auth, xp, catalogue, circulation, notifica
  * before the network answers — which is what keeps cold start under the 2s
  * budget and the core screens readable offline.
  */
-const PERSISTED = ['auth', 'xp', 'catalogue', 'circulation', 'notifications', 'social'] as const
+const PERSISTED = ['auth', 'xp', 'catalogue', 'circulation', 'notifications', 'rewards', 'social'] as const
 
 /**
  * `ui` is mostly transient, but two parts of it must outlive a reload: the
@@ -55,6 +56,11 @@ function loadPersisted(): Partial<RootShape> | undefined {
       status: state.auth.token ? 'authenticated' : 'idle',
       error: null,
     }
+  }
+  if (state.xp && state.xp.balance == null) {
+    // Spendable balance arrived after launch: everything earned so far is
+    // unspent, so seed it from the lifetime total rather than zeroing it.
+    state.xp = { ...state.xp, balance: state.xp.totalXp }
   }
   if (state.ui) {
     state.ui = {

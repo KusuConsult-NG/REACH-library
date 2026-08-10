@@ -21,6 +21,7 @@ export function ProfileScreen() {
 
   const user = useAppSelector((state) => state.auth.user)
   const xp = useAppSelector((state) => state.xp)
+  const balance = useAppSelector((state) => state.xp.balance)
   const { loans, holds, busyId } = useAppSelector((state) => state.circulation)
   const cache = useAppSelector((state) => state.catalogue.cache)
   const saved = useAppSelector((state) => state.catalogue.saved)
@@ -73,6 +74,16 @@ export function ProfileScreen() {
         streak={xp.streak}
         loans={active.length}
       />
+
+      <Link className="quick" to="/rewards">
+        <span className="quick__icon">
+          <StarIcon size={20} />
+        </span>
+        <span>
+          <span className="quick__label">{balance.toLocaleString()} XP to spend</span>
+          <span className="quick__sub">Extra loans, printing, room priority</span>
+        </span>
+      </Link>
 
       {holds.length > 0 ? (
         <section className="section" aria-labelledby="holds-heading">

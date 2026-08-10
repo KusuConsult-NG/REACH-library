@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import reducer, { award, canEarn, xpEarnedInWeek, type XpState } from './xpSlice'
+import reducer, { award, canEarn, refund, spend, xpEarnedInWeek, type XpState } from './xpSlice'
 import { levelFromXp, milestonesCrossed } from './levels'
 import { DAILY_CAPS, LEVEL_THRESHOLDS, LEVEL_TITLES, XP_VALUES } from '@/config/xp'
 import { weekKey } from '@/utils/date'
 
 const base: XpState = {
   totalXp: 0,
+  balance: 0,
   activities: [],
   weeklyGoal: 150,
   bonusPaidWeeks: [],
@@ -94,6 +95,39 @@ describe('award reducer', () => {
     const seeded = reducer(base, award({ kind: 'opac_browse', at: threeDaysAgo }, true))
     const today = reducer(seeded, award({ kind: 'opac_browse' }, true))
     expect(today.streak).toBe(1)
+  })
+})
+
+describe('spendable balance', () => {
+  it('rises with earnings alongside the lifetime total', () => {
+    const next = reducer(base, award({ kind: 'physical_borrow' }, true))
+    expect(next.totalXp).toBe(50)
+    expect(next.balance).toBe(50)
+  })
+
+  it('spending draws down the balance and leaves the lifetime total alone', () => {
+    const earned = reducer(base, award({ kind: 'physical_borrow' }, true))
+    const spent = reducer(earned, spend(30))
+    expect(spent.balance).toBe(20)
+    // The level must not fall because the member redeemed something.
+    expect(spent.totalXp).toBe(50)
+  })
+
+  it('never lets the balance go negative', () => {
+    const earned = reducer(base, award({ kind: 'opac_browse' }, true))
+    expect(reducer(earned, spend(999)).balance).toBe(0)
+  })
+
+  it('refunds an unfulfilled redemption', () => {
+    const earned = reducer(base, award({ kind: 'physical_borrow' }, true))
+    const spent = reducer(earned, spend(50))
+    expect(reducer(spent, refund(50)).balance).toBe(50)
+  })
+
+  it('does not credit the balance for a capped, zero-XP activity', () => {
+    const next = reducer(base, award({ kind: 'opac_browse' }, false))
+    expect(next.balance).toBe(0)
+    expect(next.totalXp).toBe(0)
   })
 })
 
