@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAppDispatch, useAppSelector } from '@/app/hooks'
 import { dismissToast, setTheme } from '@/features/ui/uiSlice'
+import { ErrorBoundary } from './ErrorBoundary'
 import { UniversityLogo } from './UniversityLogo'
 import {
   BackIcon,
@@ -172,7 +173,10 @@ export function AppShell() {
       ) : null}
 
       <main className="shell__main" id="main">
-        <Outlet />
+        {/* Keyed by route so walking to another screen clears a failure. */}
+        <ErrorBoundary resetKey={location.pathname}>
+          <Outlet />
+        </ErrorBoundary>
       </main>
 
       <nav className="tabbar" aria-label="Primary">

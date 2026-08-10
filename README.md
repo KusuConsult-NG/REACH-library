@@ -28,7 +28,7 @@ and loan period.
 ```bash
 npm run build        # typecheck + production build into dist/
 npm run preview      # serve the production build (service worker active)
-npm test             # 129 unit / integration tests (and `cd server && npm test` for 37 more)
+npm test             # 140 unit / integration tests (and `cd server && npm test` for 37 more)
 ```
 
 The service worker is only registered in a production build, so use `npm run preview` to exercise
@@ -119,6 +119,20 @@ behind the institutional subscription — so the app is explicit about which is 
   Mendeley or EndNote, or save the whole record as text. These are generated on the device, so they
   work offline — and they earn no XP, because paying for a file the app made itself would reward
   tapping rather than reading.
+
+### Upgrading a device that already has saved state
+
+Redux `preloadedState` *replaces* a slice rather than merging with the reducer's initial state, so
+every field added after a user last wrote their state would arrive as `undefined` — and one
+`undefined.filter(...)` in a screen takes the whole app down, not just that screen. Rather than a
+hand-written migration per field (which is one forgotten line away from a white page every time),
+`loadPersisted` merges the saved copy over the reducers' own defaults: saved values always win,
+defaults only fill gaps, and a slice saved as junk falls back to its initial state. Boot is wrapped
+too, because a throw there happens before React exists and no boundary can catch it.
+
+Screens are individually wrapped in an [error boundary](src/components/ErrorBoundary.tsx), so a
+failure shows a message with the shell and navigation intact — and offers to clear saved data, which
+is the one repair a user can carry out themselves.
 
 ### Whose data is whose
 

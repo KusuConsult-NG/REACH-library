@@ -72,11 +72,60 @@ const PERSISTED_UI = ['theme', 'queue'] as const
 const PERSIST_KEY = 'state'
 const PERSIST_VERSION = 1
 
-function loadPersisted(): Partial<RootShape> | undefined {
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+/**
+ * Fill in every field the saved copy predates.
+ *
+ * `preloadedState` *replaces* a slice rather than merging with the reducer's
+ * own initial state, so any field added after a user last wrote their state
+ * arrives as `undefined` — and `undefined.filter(...)` in a screen takes the
+ * whole app down, not just that screen. Hand-written per-field migrations were
+ * the previous answer and they do not scale: every new field is another blank
+ * page waiting for whoever forgets one.
+ *
+ * Saved values always win; defaults only fill gaps. Arrays and nulls are values,
+ * not containers, so they are taken whole.
+ */
+function withDefaults<T>(defaults: T, saved: unknown): T {
+  if (!isPlainObject(defaults) || !isPlainObject(saved)) {
+    return (saved as T | undefined) ?? defaults
+  }
+  const merged: Record<string, unknown> = { ...defaults }
+  for (const [key, value] of Object.entries(saved)) {
+    const fallback = merged[key]
+    if (value === undefined) continue
+    merged[key] =
+      isPlainObject(fallback) && isPlainObject(value) ? withDefaults(fallback, value) : value
+  }
+  return merged as T
+}
+
+/**
+ * Read the saved state and bring it up to the current shape.
+ *
+ * Exported so the upgrade path can be tested against blobs written by older
+ * builds without re-evaluating this module.
+ */
+export function loadPersisted(): Partial<RootShape> | undefined {
   const saved = readJson<{ version: number; state: Partial<RootShape> } | null>(PERSIST_KEY, null)
   if (!saved || saved.version !== PERSIST_VERSION) return undefined
 
-  const state = saved.state
+  // Whether the saved copy predates the spendable balance has to be read before
+  // the merge fills it in with a zero.
+  const balanceIsNew = !(isPlainObject(saved.state?.xp) && 'balance' in saved.state.xp)
+
+  const defaults = combined(undefined, { type: '@@reach/defaults' })
+  const state: Partial<RootShape> = {}
+  for (const key of [...PERSISTED, 'ui'] as const) {
+    const value = saved.state?.[key]
+    if (value === undefined) continue
+    // A slice saved as something other than an object is not repairable; the
+    // reducer's own initial state is the only sane reading of it.
+    state[key] = (isPlainObject(value) ? withDefaults(defaults[key], value) : defaults[key]) as never
+  }
   // Transient fields must not be restored, or the UI resumes mid-flight.
   if (state.catalogue) {
     state.catalogue = {
@@ -99,7 +148,7 @@ function loadPersisted(): Partial<RootShape> | undefined {
       error: null,
     }
   }
-  if (state.xp && state.xp.balance == null) {
+  if (state.xp && balanceIsNew) {
     // Spendable balance arrived after launch: everything earned so far is
     // unspent, so seed it from the lifetime total rather than zeroing it.
     state.xp = { ...state.xp, balance: state.xp.totalXp }
@@ -177,7 +226,24 @@ export function makeStore(preloadedState?: Partial<RootShape>) {
   })
 }
 
-export const store = makeStore(loadPersisted())
+/**
+ * Booting must not depend on the saved state being readable.
+ *
+ * `loadPersisted` runs before React exists, so a throw here is not something the
+ * error boundary can contain — it is a white page with no app at all. Starting
+ * empty loses a device's XP, which is bad; failing to start loses the app,
+ * which is worse.
+ */
+function safelyPersisted(): Partial<RootShape> | undefined {
+  try {
+    return loadPersisted()
+  } catch (error) {
+    console.error('reach:crash could not restore saved state, starting fresh', error)
+    return undefined
+  }
+}
+
+export const store = makeStore(safelyPersisted())
 
 /**
  * A debounced write would be lost if the user backgrounds or closes the app in
