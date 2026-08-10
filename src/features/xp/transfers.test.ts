@@ -30,6 +30,8 @@ function transfer(over: Partial<XpTransfer> = {}): XpTransfer {
 
 const SENDER = 'uj/2021/cve/0142'
 const RECIPIENT = 'uj/2022/law/0088'
+/** Well formed, but nobody by that number is on the roster. */
+const STRANGER = 'uj/2022/law/0089'
 
 /** Two members in one process, each with their own signed-in adapter. */
 async function member(username: string) {
@@ -61,6 +63,15 @@ describe('recordTransfer reducer', () => {
   it('never drives the balance negative', () => {
     const state = reducer(base, recordTransfer(transfer({ amount: 500 })))
     expect(state.balance).toBe(0)
+  })
+
+  it('ignores a transfer id it has already credited', () => {
+    const arriving = transfer({ id: 'same', direction: 'received', amount: 200 })
+    let state = reducer(base, recordTransfer(arriving))
+    state = reducer(state, recordTransfer(arriving))
+    // At-least-once delivery means this happens; crediting twice would mint XP.
+    expect(state.balance).toBe(200)
+    expect(state.transfers).toHaveLength(1)
   })
 
   it('keeps the newest movement first', () => {
@@ -95,6 +106,25 @@ describe('MockLibraryApi transfers', () => {
     expect(found!.department).toBeTruthy()
   })
 
+  it('does not invent a member for a number nobody holds', async () => {
+    const api = await member(SENDER)
+    // Deriving the profile from the credential would make every typo resolve to
+    // a plausible stranger, and the XP would be unrecoverable.
+    expect(await api.lookupMember(STRANGER)).toBeUndefined()
+    expect(await api.lookupMember('qqqqqqqqqq')).toBeUndefined()
+  })
+
+  it('refuses to send to a number nobody holds', async () => {
+    const api = await member(SENDER)
+    await expect(api.sendXp(STRANGER, 100)).rejects.toMatchObject({ code: 'not_found' })
+  })
+
+  it('lets a member who has signed in on this device be found afterwards', async () => {
+    await member('uj/2024/agr/0777')
+    const api = await member(SENDER)
+    expect(await api.lookupMember('uj/2024/agr/0777')).toBeDefined()
+  })
+
   it('refuses to let a member send XP to themselves', async () => {
     const api = await member(SENDER)
     await expect(api.lookupMember(SENDER)).rejects.toMatchObject({ code: 'limit_reached' })
@@ -120,23 +150,39 @@ describe('MockLibraryApi transfers', () => {
     const sender = await member(SENDER)
     const result = await sender.sendXp(RECIPIENT, 200, 'For the group project')
     expect(result.amount).toBe(200)
-    await expect(sender.claimIncomingXp()).resolves.toEqual([])
+    await expect(sender.listIncomingXp()).resolves.toEqual([])
 
     const recipient = await member(RECIPIENT)
-    const incoming = await recipient.claimIncomingXp()
+    const incoming = await recipient.listIncomingXp()
     expect(incoming).toHaveLength(1)
     expect(incoming[0].amount).toBe(200)
     expect(incoming[0].note).toBe('For the group project')
     expect(incoming[0].id).toBe(result.transferId)
   })
 
-  it('clears the inbox on claim, so a reload cannot credit the same XP twice', async () => {
+  it('keeps XP waiting until the recipient acknowledges it', async () => {
     const sender = await member(SENDER)
     await sender.sendXp(RECIPIENT, 100)
 
     const recipient = await member(RECIPIENT)
-    expect(await recipient.claimIncomingXp()).toHaveLength(1)
-    expect(await recipient.claimIncomingXp()).toEqual([])
+    // Reading must not consume: a device that dies here has to see it again.
+    expect(await recipient.listIncomingXp()).toHaveLength(1)
+    expect(await recipient.listIncomingXp()).toHaveLength(1)
+
+    const waiting = await recipient.listIncomingXp()
+    await recipient.acknowledgeXp(waiting.map((transfer) => transfer.id))
+    expect(await recipient.listIncomingXp()).toEqual([])
+  })
+
+  it('acknowledging one transfer leaves the others waiting', async () => {
+    const sender = await member(SENDER)
+    const first = await sender.sendXp(RECIPIENT, 100)
+    await sender.sendXp(RECIPIENT, 150)
+
+    const recipient = await member(RECIPIENT)
+    await recipient.acknowledgeXp([first.transferId])
+    const left = await recipient.listIncomingXp()
+    expect(left.map((transfer) => transfer.amount)).toEqual([150])
   })
 
   it('hands over every waiting transfer at once', async () => {
@@ -145,8 +191,8 @@ describe('MockLibraryApi transfers', () => {
     await sender.sendXp(RECIPIENT, 150)
 
     const recipient = await member(RECIPIENT)
-    const incoming = await recipient.claimIncomingXp()
-    expect(incoming.map((t) => t.amount)).toEqual([100, 150])
+    const incoming = await recipient.listIncomingXp()
+    expect(incoming.map((transfer) => transfer.amount)).toEqual([100, 150])
   })
 
   it('requires a session before sending anything', async () => {

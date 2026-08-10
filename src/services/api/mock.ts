@@ -12,6 +12,7 @@ import type {
 } from '@/types'
 import {
   ApiError,
+  reportSessionExpired,
   type IncomingTransfer,
   type LibraryApi,
   type SearchParams,
@@ -48,7 +49,32 @@ interface MockState {
   inbox: Record<string, IncomingTransfer[]>
   /** Amount each member has sent, per ISO week, for the weekly ceiling. */
   sentByWeek: Record<string, number>
+  /**
+   * Which borrower owns each personal record (loan, hold, booking), keyed by
+   * record id. Library machines are shared, so a second member signing in on
+   * the same device must not inherit the first one's circulation record.
+   */
+  owners: Record<string, string>
+  /**
+   * The borrowers this device knows about: the seeded demo roster plus anyone
+   * who has signed in here. `lookupMember` resolves against this and nothing
+   * else, so a mistyped number fails rather than conjuring a plausible stranger.
+   */
+  members: Record<string, TransferTarget>
 }
+
+/**
+ * Demo members who exist before anyone signs in, so XP can be sent on a fresh
+ * device. A real deployment resolves these against Koha's patron file.
+ */
+const SEED_MEMBERS = [
+  'UJ/2021/CVE/0142',
+  'UJ/2022/LAW/0088',
+  'UJ/2021/MED/0210',
+  'PG/2023/ENG/0042',
+  'UJ/2022/CSC/0311',
+  'STAFF/LIB/0031',
+]
 
 /**
  * Built fresh on every call. A shared constant would hand every instance the
@@ -65,6 +91,8 @@ function emptyState(): MockState {
     accessCounts: {},
     inbox: {},
     sentByWeek: {},
+    owners: {},
+    members: {},
   }
 }
 
@@ -72,7 +100,16 @@ const STATE_KEY = 'mock-backend'
 const SESSION_KEY = 'mock-session'
 
 function loadState(): MockState {
-  return { ...emptyState(), ...readJson<Partial<MockState>>(STATE_KEY, {}) }
+  const state = { ...emptyState(), ...readJson<Partial<MockState>>(STATE_KEY, {}) }
+  for (const credential of SEED_MEMBERS) {
+    const profile = profileFor(credential)
+    state.members[profile.borrowerNumber] ??= {
+      id: profile.borrowerNumber,
+      name: profile.name,
+      department: profile.department,
+    }
+  }
+  return state
 }
 
 function saveState(state: MockState) {
@@ -249,12 +286,40 @@ export class MockLibraryApi implements LibraryApi {
 
   private session(): Session {
     const session = readJson<Session | null>(SESSION_KEY, null)
-    if (!session) throw new ApiError('Your session has expired. Please sign in again.', 'invalid_credentials')
+    if (!session) {
+      reportSessionExpired()
+      throw new ApiError('Your session has expired. Please sign in again.', 'invalid_credentials')
+    }
     return session
   }
 
   private commit() {
     saveState(this.state)
+  }
+
+  /** The signed-in borrower's number — the key every personal record hangs off. */
+  private me(): string {
+    return this.session().user.borrowerNumber
+  }
+
+  /**
+   * Narrow a set of records to the signed-in borrower.
+   *
+   * Records written before ownership was tracked have no owner; they are
+   * treated as the current borrower's, so an existing device does not appear to
+   * lose its loans on upgrade.
+   */
+  private mine<T extends { id: string }>(records: T[]): T[] {
+    const me = this.me()
+    return records.filter((record) => (this.state.owners[record.id] ?? me) === me)
+  }
+
+  /** Reject a record that exists but belongs to someone else, as a miss. */
+  private assertMine(recordId: string) {
+    const owner = this.state.owners[recordId]
+    if (owner && owner !== this.me()) {
+      throw new ApiError('That record is not on your borrower account.', 'not_found')
+    }
   }
 
   /**
@@ -274,11 +339,20 @@ export class MockLibraryApi implements LibraryApi {
     if (password.trim().length < 4) {
       throw new ApiError('That username and password combination was not recognised.', 'invalid_credentials')
     }
+    const user = profileFor(username)
     const session: Session = {
-      user: profileFor(username),
+      user,
       token: `demo.${btoa(username.trim()).replace(/=+$/, '')}.${Date.now().toString(36)}`,
       expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 12).toISOString(),
     }
+    // Signing in registers you in the directory, so a classmate on this device
+    // can find you afterwards.
+    this.state.members[user.borrowerNumber] = {
+      id: user.borrowerNumber,
+      name: user.name,
+      department: user.department,
+    }
+    this.commit()
     writeJson(SESSION_KEY, session)
     return session
   }
@@ -423,12 +497,12 @@ export class MockLibraryApi implements LibraryApi {
       return loan
     })
     if (mutated) this.commit()
-    return this.state.loans
+    return this.mine(this.state.loans)
   }
 
   async getHolds(): Promise<Hold[]> {
     await wait(60)
-    return this.state.holds
+    return this.mine(this.state.holds)
   }
 
   async checkout(resourceId: string): Promise<Loan> {
@@ -446,14 +520,15 @@ export class MockLibraryApi implements LibraryApi {
     }
 
     const rules = LOAN_RULES[user.role]
-    const activeCount = this.state.loans.filter((l) => l.status !== 'returned').length
+    const myLoans = this.mine(this.state.loans)
+    const activeCount = myLoans.filter((l) => l.status !== 'returned').length
     if (activeCount >= rules.limit) {
       throw new ApiError(
         `You already have ${rules.limit} items on loan, the maximum for your borrower category.`,
         'limit_reached',
       )
     }
-    if (this.state.loans.some((l) => l.resourceId === resourceId && l.status !== 'returned')) {
+    if (myLoans.some((l) => l.resourceId === resourceId && l.status !== 'returned')) {
       throw new ApiError('You already have this item on loan.', 'limit_reached')
     }
 
@@ -468,14 +543,19 @@ export class MockLibraryApi implements LibraryApi {
       status: 'active',
     }
     this.state.loans = [loan, ...this.state.loans]
+    this.state.owners[loan.id] = user.borrowerNumber
     this.state.availability[resourceId] = (this.state.availability[resourceId] ?? 0) - 1
-    this.state.holds = this.state.holds.filter((h) => h.resourceId !== resourceId)
+    // Borrowing satisfies only your own reservation; other people keep their place.
+    this.state.holds = this.state.holds.filter(
+      (h) => !(h.resourceId === resourceId && (this.state.owners[h.id] ?? user.borrowerNumber) === user.borrowerNumber),
+    )
     this.commit()
     return loan
   }
 
   async renew(loanId: string): Promise<Loan> {
     await latency()
+    this.assertMine(loanId)
     const loan = this.state.loans.find((l) => l.id === loanId)
     if (!loan) throw new ApiError('That loan is no longer on your record.', 'not_found')
     if (loan.status === 'returned') throw new ApiError('This item has already been returned.', 'unavailable')
@@ -496,6 +576,7 @@ export class MockLibraryApi implements LibraryApi {
 
   async returnLoan(loanId: string): Promise<Loan> {
     await latency()
+    this.assertMine(loanId)
     const loan = this.state.loans.find((l) => l.id === loanId)
     if (!loan) throw new ApiError('That loan is no longer on your record.', 'not_found')
     const returned: Loan = { ...loan, status: 'returned', returnedAt: new Date().toISOString() }
@@ -537,10 +618,10 @@ export class MockLibraryApi implements LibraryApi {
 
   async placeHold(resourceId: string): Promise<Hold> {
     await latency()
-    this.session()
+    const me = this.me()
     const resource = resourceById(resourceId)
     if (!resource) throw new ApiError('That record could not be found in the catalogue.', 'not_found')
-    if (this.state.holds.some((h) => h.resourceId === resourceId && h.status !== 'cancelled')) {
+    if (this.mine(this.state.holds).some((h) => h.resourceId === resourceId && h.status !== 'cancelled')) {
       throw new ApiError('You already have a hold on this item.', 'limit_reached')
     }
     const hold: Hold = {
@@ -552,12 +633,14 @@ export class MockLibraryApi implements LibraryApi {
       expiresAt: addDays(new Date(), 21).toISOString(),
     }
     this.state.holds = [hold, ...this.state.holds]
+    this.state.owners[hold.id] = me
     this.commit()
     return hold
   }
 
   async cancelHold(holdId: string): Promise<void> {
     await latency()
+    this.assertMine(holdId)
     this.state.holds = this.state.holds.filter((h) => h.id !== holdId)
     this.commit()
   }
@@ -576,7 +659,7 @@ export class MockLibraryApi implements LibraryApi {
 
   async bookSpace(spaceId: string, date: string, slot: string): Promise<SpaceBooking> {
     await latency()
-    this.session()
+    const me = this.me()
     const space = STUDY_SPACES.find((s) => s.id === spaceId)
     if (!space) throw new ApiError('That space is not bookable.', 'not_found')
     const clash = this.state.bookings.some(
@@ -595,32 +678,42 @@ export class MockLibraryApi implements LibraryApi {
       createdAt: new Date().toISOString(),
     }
     this.state.bookings = [booking, ...this.state.bookings]
+    this.state.owners[booking.id] = me
     this.commit()
     return booking
   }
 
   async cancelBooking(bookingId: string): Promise<void> {
     await latency()
+    this.assertMine(bookingId)
     this.state.bookings = this.state.bookings.filter((b) => b.id !== bookingId)
     this.commit()
   }
 
   async getBookings(): Promise<SpaceBooking[]> {
     await wait(40)
-    return this.state.bookings
+    return this.mine(this.state.bookings)
   }
 
+  /**
+   * Resolve a credential against the directory.
+   *
+   * Deriving a member from the credential itself would make every string a
+   * valid recipient: a mistyped digit would resolve to a different,
+   * plausible-looking person and the XP would be gone. Only borrowers this
+   * device actually knows about resolve.
+   */
   async lookupMember(identifier: string): Promise<TransferTarget | undefined> {
     await wait(80)
     const trimmed = identifier.trim()
     if (trimmed.length < 3) return undefined
 
     const me = this.session().user
-    const target = profileFor(trimmed)
-    if (target.borrowerNumber === me.borrowerNumber) {
+    const borrowerNumber = profileFor(trimmed).borrowerNumber
+    if (borrowerNumber === me.borrowerNumber) {
       throw new ApiError('That is your own account.', 'limit_reached')
     }
-    return { id: target.borrowerNumber, name: target.name, department: target.department }
+    return this.state.members[borrowerNumber]
   }
 
   async sendXp(identifier: string, amount: number, note?: string): Promise<TransferResult> {
@@ -658,16 +751,25 @@ export class MockLibraryApi implements LibraryApi {
     return { transferId, recipient, amount: whole, at }
   }
 
-  async claimIncomingXp(): Promise<IncomingTransfer[]> {
+  /**
+   * What is waiting for this member. Reading does not consume: delivery is
+   * at-least-once, and the client acknowledges only once the credit is applied
+   * and persisted. Clearing on read would lose the XP outright if the tab died
+   * in between — the recipient's device is the one place it could not be
+   * recovered from.
+   */
+  async listIncomingXp(): Promise<IncomingTransfer[]> {
     await wait(60)
-    const me = this.session().user
-    const waiting = this.state.inbox[me.borrowerNumber] ?? []
-    if (waiting.length === 0) return []
+    return this.state.inbox[this.me()] ?? []
+  }
 
-    // Handing them over clears them, so a reload cannot credit them twice.
-    this.state.inbox[me.borrowerNumber] = []
+  async acknowledgeXp(ids: string[]): Promise<void> {
+    await wait(40)
+    const me = this.me()
+    const done = new Set(ids)
+    const waiting = this.state.inbox[me] ?? []
+    this.state.inbox[me] = waiting.filter((transfer) => !done.has(transfer.id))
     this.commit()
-    return waiting
   }
 
   async requestConsultation(

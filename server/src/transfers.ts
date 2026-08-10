@@ -19,8 +19,8 @@ import { weekKey } from './xp.js'
 
 export const MIN_TRANSFER = 50
 export const WEEKLY_TRANSFER_LIMIT = 1000
-/** Bounds one member's inbox so an unclaimed pile cannot grow without end. */
-const MAX_INBOX = 100
+/** Bounds one member's inbox so an uncollected pile cannot grow without end. */
+export const MAX_INBOX = 100
 
 export interface IncomingTransfer {
   id: string
@@ -67,8 +67,16 @@ export async function sendXp(
       )
     }
 
-    state.sentByWeek[key] = alreadySent + whole
     const inbox = (state.inbox[recipient.id] ??= [])
+    // Refuse rather than trim. Dropping the oldest to make room would destroy
+    // XP that a member had already been told was sent.
+    if (inbox.length >= MAX_INBOX) {
+      throw HttpError.conflict(
+        'That member has too much uncollected XP waiting. Ask them to open REACH, then try again.',
+      )
+    }
+
+    state.sentByWeek[key] = alreadySent + whole
     inbox.push({
       id: transferId,
       fromName: sender.name,
@@ -77,25 +85,30 @@ export async function sendXp(
       note: note?.slice(0, 80),
       at,
     })
-    if (inbox.length > MAX_INBOX) inbox.splice(0, inbox.length - MAX_INBOX)
-
     return { transferId, recipient, amount: whole, at }
   })
 }
 
 /**
- * Hand over everything waiting for this member and clear it.
+ * What is waiting for this member. Reading does not consume it.
  *
- * Clearing on collection is what stops a reload from crediting the same
- * transfer twice — the recipient's device applies each one exactly once.
+ * Delivery is at-least-once: the recipient's device applies the credit, makes it
+ * durable, and only then acknowledges. Clearing on read would be at-most-once,
+ * and a tab closed in the wrong half-second would destroy the XP with no copy
+ * left anywhere.
  */
-export async function claimIncoming(store: Store, user: User): Promise<IncomingTransfer[]> {
-  const waiting = store.data.inbox[user.borrowerNumber] ?? []
-  if (waiting.length === 0) return []
+export function listIncoming(store: Store, user: User): IncomingTransfer[] {
+  return store.data.inbox[user.borrowerNumber] ?? []
+}
 
-  return store.update((state) => {
-    const claimed = state.inbox[user.borrowerNumber] ?? []
-    state.inbox[user.borrowerNumber] = []
-    return claimed
+/** Drop the transfers a recipient has confirmed they have credited. */
+export async function acknowledge(store: Store, user: User, ids: string[]): Promise<void> {
+  const done = new Set(ids)
+  const waiting = store.data.inbox[user.borrowerNumber] ?? []
+  if (!waiting.some((transfer) => done.has(transfer.id))) return
+
+  await store.update((state) => {
+    const inbox = state.inbox[user.borrowerNumber] ?? []
+    state.inbox[user.borrowerNumber] = inbox.filter((transfer) => !done.has(transfer.id))
   })
 }

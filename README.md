@@ -28,11 +28,22 @@ and loan period.
 ```bash
 npm run build        # typecheck + production build into dist/
 npm run preview      # serve the production build (service worker active)
-npm test             # 64 unit / integration tests (and `cd server && npm test` for 28 more)
+npm test             # 110 unit / integration tests (and `cd server && npm test` for 37 more)
 ```
 
 The service worker is only registered in a production build, so use `npm run preview` to exercise
 installability and offline behaviour.
+
+To trace the seams where this app actually goes wrong — which borrower owns a piece of state, whether
+a write reached disk, whether a response arrived before something newer — turn on tracing from the
+console on any build, including a deployed one:
+
+```js
+localStorage.setItem('reach:debug', '1'); location.reload()
+```
+
+Then filter the console on `reach:identity`, `reach:persist`, `reach:transfer`, `reach:api`,
+`reach:queue` or `reach:search`. See [`src/services/debug.ts`](src/services/debug.ts).
 
 ## What is implemented
 
@@ -84,8 +95,24 @@ by name, department and borrower number *before* an amount is confirmed, since a
 matriculation number would otherwise send credit to a stranger with no way back. Transfers move the
 balance only — a level is never bought — with a 50 XP minimum and a 1,000 XP weekly ceiling enforced
 by the backend rather than the browser ([`src/config/transfers.ts`](src/config/transfers.ts)).
-Incoming XP is parked for the recipient and collected on their next sign-in; collecting clears it, so
-a reload cannot credit the same transfer twice.
+Incoming XP is parked for the recipient and collected on their next sign-in. Collection is
+at-least-once and application is idempotent — the credit is applied and written to storage *before*
+the server is told to drop it — so a tab closed mid-collection redelivers rather than losing the XP.
+
+### Whose data is whose
+
+Three scopes, and most bugs in this app have been a confusion between them:
+
+| Scope | Examples | Where it lives |
+| --- | --- | --- |
+| The device | Theme | Survives everything, including a change of borrower |
+| The borrower | XP, vouchers, transfers, loans, holds, bookings, notifications, offline queue | Cleared when a *different* borrower signs in — never on your own sign-out |
+| The library | Catalogue, availability, room bookings as seen by others, hold queues | Backend; shared by everyone |
+
+A shared library machine is the normal case, so signing in as someone else drops the previous
+borrower's record — including their queued offline actions, which would otherwise replay under the
+new session. Signing out and back in as yourself keeps everything: with XP held on the device,
+clearing it there would destroy it.
 
 ## Architecture
 

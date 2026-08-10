@@ -25,7 +25,18 @@ export function SendXpCard() {
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const remaining = WEEKLY_TRANSFER_LIMIT - sentThisWeek(xp)
+  const remaining = Math.max(0, WEEKLY_TRANSFER_LIMIT - sentThisWeek(xp))
+  const ceiling = Math.min(xp.balance, remaining)
+  /**
+   * Below the minimum there is no valid amount to type, and a number field
+   * whose max is under its min silently rejects every keystroke. Say so instead.
+   */
+  const blocked =
+    xp.balance < MIN_TRANSFER
+      ? `You need at least ${MIN_TRANSFER} XP to send any. You have ${xp.balance.toLocaleString()}.`
+      : remaining < MIN_TRANSFER
+        ? 'You have reached your transfer limit for this week. It resets on Monday.'
+        : null
 
   async function check(event: FormEvent) {
     event.preventDefault()
@@ -65,7 +76,11 @@ export function SendXpCard() {
         </p>
       </div>
 
-      {!recipient ? (
+      {blocked ? (
+        <p className="field__hint" role="status">
+          {blocked}
+        </p>
+      ) : !recipient ? (
         <form className="stack stack--tight" onSubmit={check}>
           <div className="field">
             <label className="field__label" htmlFor="recipient">
@@ -125,7 +140,7 @@ export function SendXpCard() {
               type="number"
               inputMode="numeric"
               min={MIN_TRANSFER}
-              max={Math.min(xp.balance, remaining)}
+              max={ceiling}
               step={10}
               value={amount}
               onChange={(event) => setAmount(event.target.value)}
@@ -151,7 +166,12 @@ export function SendXpCard() {
           </div>
 
           <div className="row" style={{ gap: 'var(--space-2)' }}>
-            <button type="button" className="btn" disabled={sending} onClick={() => void confirm()}>
+            <button
+              type="button"
+              className="btn"
+              disabled={sending || Number(amount) < MIN_TRANSFER || Number(amount) > ceiling}
+              onClick={() => void confirm()}
+            >
               {sending ? <Spinner label="Sending" /> : null}
               Send {Number(amount) > 0 ? Number(amount).toLocaleString() : ''} XP
             </button>

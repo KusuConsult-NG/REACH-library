@@ -127,7 +127,8 @@ activity ledger with whoever earned it, so a transfer cannot manufacture engagem
 | --- | --- | --- | --- |
 | GET | `/activity/members/:identifier` | — | `{ id, name, department }` |
 | POST | `/activity/transfers` | `{ identifier, amount, note? }` | `{ transferId, recipient, amount, at }` |
-| POST | `/activity/transfers/claim` | — | `IncomingTransfer[]` |
+| GET | `/activity/transfers/incoming` | — | `IncomingTransfer[]` |
+| POST | `/activity/transfers/ack` | `{ ids }` | `204` |
 
 The lookup exists so the sender sees who they are about to pay before any XP moves — a mistyped
 matriculation number would otherwise send credit to a stranger with no way back. It returns the
@@ -141,8 +142,23 @@ sent per ISO week per borrower (`server/src/transfers.ts`; keep in step with
 ceiling is `409` with the remaining allowance in the message.
 
 Delivery is by inbox rather than by push: a transfer is parked against the recipient's borrower
-number, and their device collects it on next sign-in. Claiming clears the inbox in the same write, so
-a reload cannot credit the same transfer twice.
+number, and their device collects it on next sign-in.
+
+Collection is **at-least-once with idempotent application**, in that order:
+
+1. `GET /transfers/incoming` — reading does **not** consume.
+2. The device credits each transfer and flushes the write to storage.
+3. `POST /transfers/ack` — only now is it dropped from the inbox.
+
+A single consuming `claim` would be at-most-once: a tab closed between the response and the write
+would destroy the XP, and the recipient's device is the only place it existed. With this order a
+failure anywhere redelivers, and the client ignores a transfer id it has already credited
+(`recordTransfer` in `src/features/xp/xpSlice.ts`) — so the worst case is a repeated read, never lost
+XP. Any client implementing this contract must be idempotent by `id`.
+
+An inbox is capped at 100 uncollected transfers, and a send beyond that is refused with `409`.
+Trimming the oldest to make room would silently destroy XP the sender had already been told was
+sent.
 
 The spendable balance itself is still client-side, because redemptions are — the server enforces
 identity, the minimum and the weekly ceiling, and the wallet arithmetic moves here when vouchers do.

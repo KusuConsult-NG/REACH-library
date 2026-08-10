@@ -3,7 +3,7 @@ import { asyncRoute, HttpError } from '../errors.js'
 import { requireSession, type AuthedRequest } from '../session.js'
 import type { Store } from '../store.js'
 import { CLIENT_ACTIVITY_KINDS, ledgerFor, recordActivity } from '../xp.js'
-import { claimIncoming, sendXp } from '../transfers.js'
+import { acknowledge, listIncoming, sendXp } from '../transfers.js'
 import type { MemberDirectory } from '../directory.js'
 import type { ActivityKind } from '../types.js'
 
@@ -83,10 +83,22 @@ export function activityRoutes(store: Store, directory: MemberDirectory): Router
     }),
   )
 
-  router.post(
-    '/transfers/claim',
+  router.get(
+    '/transfers/incoming',
     asyncRoute(async (req: AuthedRequest, res) => {
-      res.json(await claimIncoming(store, req.user))
+      res.json(listIncoming(store, req.user))
+    }),
+  )
+
+  router.post(
+    '/transfers/ack',
+    asyncRoute(async (req: AuthedRequest, res) => {
+      const { ids } = (req.body ?? {}) as Record<string, unknown>
+      if (!Array.isArray(ids) || ids.some((id) => typeof id !== 'string')) {
+        throw HttpError.badRequest('ids must be an array of transfer ids')
+      }
+      await acknowledge(store, req.user, ids as string[])
+      res.status(204).end()
     }),
   )
 

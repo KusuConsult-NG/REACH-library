@@ -164,6 +164,51 @@ describe('MockLibraryApi circulation', () => {
     await expect(api.bookSpace('s-01', today, '13:00')).rejects.toMatchObject({ code: 'unavailable' })
   })
 
+  it('keeps one borrower’s circulation record off another borrower’s device', async () => {
+    const first = new MockLibraryApi()
+    await first.login('uj/2021/cve/0142', 'password')
+    const loan = await first.checkout('r-005')
+    await first.placeHold('r-002')
+    const today = new Date().toISOString().slice(0, 10)
+    await first.bookSpace('s-01', today, '14:00')
+
+    const second = new MockLibraryApi()
+    await second.login('uj/2022/law/0088', 'password')
+
+    expect(await second.getLoans()).toEqual([])
+    expect(await second.getHolds()).toEqual([])
+    expect(await second.getBookings()).toEqual([])
+    // And they cannot act on it either, even holding the id.
+    await expect(second.renew(loan.id)).rejects.toMatchObject({ code: 'not_found' })
+  })
+
+  it('still shows a borrower their own record after someone else has used the device', async () => {
+    const first = new MockLibraryApi()
+    await first.login('uj/2021/cve/0142', 'password')
+    await first.checkout('r-005')
+
+    const second = new MockLibraryApi()
+    await second.login('uj/2022/law/0088', 'password')
+    await second.checkout('r-005')
+
+    const back = new MockLibraryApi()
+    await back.login('uj/2021/cve/0142', 'password')
+    expect(await back.getLoans()).toHaveLength(1)
+  })
+
+  it('leaves a booked slot booked for everyone — the room is shared, the booking is not', async () => {
+    const first = new MockLibraryApi()
+    await first.login('uj/2021/cve/0142', 'password')
+    const today = new Date().toISOString().slice(0, 10)
+    await first.bookSpace('s-01', today, '16:00')
+
+    const second = new MockLibraryApi()
+    await second.login('uj/2022/law/0088', 'password')
+    await expect(second.bookSpace('s-01', today, '16:00')).rejects.toMatchObject({
+      code: 'unavailable',
+    })
+  })
+
   it('requires a session before circulating anything', async () => {
     const api = new MockLibraryApi()
     await expect(api.checkout('r-005')).rejects.toMatchObject({ code: 'invalid_credentials' })

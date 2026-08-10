@@ -22,6 +22,9 @@ import { loadTrending } from '@/features/catalogue/catalogueSlice'
 import { refreshReminders } from '@/features/notifications/reminders'
 import { flushQueue } from '@/features/offline/sync'
 import { claimIncomingXp } from '@/features/xp/transfers'
+import { logout } from '@/features/auth/authSlice'
+import { onSessionExpired } from '@/services/api'
+import { store } from '@/app/store'
 import { setInstallAvailable, setOnline } from '@/features/ui/uiSlice'
 import { watchInstallPrompt } from '@/pwa'
 import { EmptyState } from '@/components/primitives'
@@ -52,6 +55,13 @@ function useBootstrap(authenticated: boolean) {
 
   useEffect(() => {
     watchInstallPrompt((available) => dispatch(setInstallAvailable(available)))
+
+    // A session that expires mid-use would otherwise leave every screen
+    // erroring with no way out. Sign the user out so they land on the form that
+    // actually fixes it.
+    onSessionExpired(() => {
+      if (store.getState().auth.token) void dispatch(logout())
+    })
 
     const goOnline = () => {
       dispatch(setOnline(true))

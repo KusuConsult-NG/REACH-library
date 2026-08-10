@@ -1,4 +1,5 @@
 import { createAsyncThunk, createSlice, type PayloadAction } from '@reduxjs/toolkit'
+import { debug } from '@/services/debug'
 import { api, ApiError, type SearchParams, type SearchResult } from '@/services/api'
 import type { Resource, ResourceType, TrendingEntry } from '@/types'
 
@@ -149,7 +150,14 @@ const catalogueSlice = createSlice({
         state.requestId = action.meta.requestId
       })
       .addCase(runSearch.fulfilled, (state, action) => {
-        if (state.requestId !== action.meta.requestId) return
+        if (state.requestId !== action.meta.requestId) {
+          // The one line that explains "I searched for X and got Y".
+          debug('search', 'discarded a stale answer', {
+            arrived: action.meta.requestId,
+            awaiting: state.requestId,
+          })
+          return
+        }
         state.requestId = null
         state.status = 'ready'
         state.results = action.payload.items
@@ -159,7 +167,14 @@ const catalogueSlice = createSlice({
         for (const resource of action.payload.items) state.cache[resource.id] = resource
       })
       .addCase(runSearch.rejected, (state, action) => {
-        if (state.requestId !== action.meta.requestId) return
+        if (state.requestId !== action.meta.requestId) {
+          // The one line that explains "I searched for X and got Y".
+          debug('search', 'discarded a stale answer', {
+            arrived: action.meta.requestId,
+            awaiting: state.requestId,
+          })
+          return
+        }
         state.requestId = null
         state.status = 'error'
         state.error = action.payload ?? 'Search failed.'

@@ -2,6 +2,7 @@ import type { AppDispatch, RootState } from '@/app/store'
 import { api } from '@/services/api'
 import { loadCirculation } from '@/features/circulation/circulationSlice'
 import { dequeue, setSyncing, toast } from '@/features/ui/uiSlice'
+import { debug } from '@/services/debug'
 
 /**
  * Replay everything captured while offline, oldest first.
@@ -14,6 +15,11 @@ export function flushQueue() {
   return async (dispatch: AppDispatch, getState: () => RootState) => {
     const { queue, syncing, online } = getState().ui
     if (syncing || !online || queue.length === 0) return
+
+    debug('queue', 'flushing', {
+      borrower: getState().auth.user?.borrowerNumber,
+      ops: queue.map((op) => ({ id: op.id, kind: op.kind, at: op.at })),
+    })
 
     dispatch(setSyncing(true))
     let succeeded = 0
@@ -33,6 +39,7 @@ export function flushQueue() {
           break
         }
         // Permanent rejection: drop it so the queue cannot wedge.
+        debug('queue', 'dropping op', { id: op.id, kind: op.kind, code })
         dispatch(dequeue(op.id))
         failed += 1
       }

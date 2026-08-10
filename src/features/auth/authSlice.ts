@@ -9,6 +9,14 @@ export interface AuthState {
   error: string | null
   /** Cleared once the user has been through the welcome carousel. */
   onboarded: boolean
+  /**
+   * The last borrower to sign in on this device, kept across sign-out.
+   *
+   * Signing out must not cost you your own record, but the next person to sign
+   * in must not inherit it either — and by then there is no `user` left to
+   * compare against. This is what tells those two cases apart.
+   */
+  lastBorrowerNumber: string | null
   privacy: PrivacySettings
   notifications: NotificationPrefs
 }
@@ -34,6 +42,7 @@ const initialState: AuthState = {
   status: 'idle',
   error: null,
   onboarded: false,
+  lastBorrowerNumber: null,
   privacy: DEFAULT_PRIVACY,
   notifications: DEFAULT_NOTIFICATIONS,
 }
@@ -90,6 +99,7 @@ const authSlice = createSlice({
         state.status = 'authenticated'
         state.user = action.payload.user
         state.token = action.payload.token
+        state.lastBorrowerNumber = action.payload.user.borrowerNumber
         state.error = null
       })
       .addCase(login.rejected, (state, action) => {
@@ -100,6 +110,7 @@ const authSlice = createSlice({
         state.user = null
         state.token = null
         state.status = 'idle'
+        // lastBorrowerNumber deliberately survives: see the field's note.
       })
   },
 })

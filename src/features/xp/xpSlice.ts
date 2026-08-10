@@ -142,6 +142,9 @@ const xpSlice = createSlice({
      */
     recordTransfer(state, action: PayloadAction<XpTransfer>) {
       const transfer = action.payload
+      // Idempotent by id. Incoming XP is delivered at least once, so the same
+      // transfer can arrive twice; crediting it twice would mint XP.
+      if (state.transfers.some((existing) => existing.id === transfer.id)) return
       if (transfer.direction === 'sent') {
         state.balance = Math.max(0, state.balance - transfer.amount)
       } else {

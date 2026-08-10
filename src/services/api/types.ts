@@ -101,7 +101,26 @@ export interface LibraryApi {
   lookupMember(identifier: string): Promise<TransferTarget | undefined>
   sendXp(identifier: string, amount: number, note?: string): Promise<TransferResult>
   /** Collect anything sent to this member since they last looked. */
-  claimIncomingXp(): Promise<IncomingTransfer[]>
+  listIncomingXp(): Promise<IncomingTransfer[]>
+  acknowledgeXp(ids: string[]): Promise<void>
+}
+
+/**
+ * Notified when the backend rejects an *established* session, so the app can
+ * return the user to sign-in.
+ *
+ * Without this a token that expires mid-session leaves every screen erroring
+ * with no way out — the app looks broken when it only needs a new sign-in.
+ * A failed sign-in attempt does not fire it: there is no session to end.
+ */
+let sessionExpiredHandler: (() => void) | null = null
+
+export function onSessionExpired(handler: () => void): void {
+  sessionExpiredHandler = handler
+}
+
+export function reportSessionExpired(): void {
+  sessionExpiredHandler?.()
 }
 
 export class ApiError extends Error {

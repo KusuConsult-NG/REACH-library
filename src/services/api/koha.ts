@@ -9,6 +9,7 @@ import type {
 } from '@/types'
 import {
   ApiError,
+  reportSessionExpired,
   type IncomingTransfer,
   type LibraryApi,
   type SearchParams,
@@ -17,6 +18,7 @@ import {
   type TransferResult,
   type TransferTarget,
 } from './types'
+import { debug } from '@/services/debug'
 import { readJson, writeJson } from '@/services/storage'
 
 /**
@@ -47,6 +49,7 @@ export class KohaLibraryApi implements LibraryApi {
 
   private async request<T>(path: string, init: RequestInit = {}): Promise<T> {
     const token = this.token()
+    const startedAt = Date.now()
     let response: Response
     try {
       response = await fetch(`${this.baseUrl}${path}`, {
@@ -58,10 +61,22 @@ export class KohaLibraryApi implements LibraryApi {
         },
       })
     } catch {
+      debug('api', 'request failed to reach the proxy', { path, method: init.method ?? 'GET' })
       throw new ApiError('You appear to be offline. This action will be retried when you reconnect.', 'offline')
     }
 
+    // Path, status and elapsed time together: a slow 200 that lands after a
+    // newer request is the shape of every stale-answer bug in this app.
+    debug('api', 'response', {
+      path,
+      method: init.method ?? 'GET',
+      status: response.status,
+      ms: Date.now() - startedAt,
+      authenticated: Boolean(token),
+    })
+
     if (response.status === 401) {
+      reportSessionExpired()
       throw new ApiError('Your session has expired. Please sign in again.', 'invalid_credentials')
     }
     if (response.status === 404) {
@@ -200,7 +215,14 @@ export class KohaLibraryApi implements LibraryApi {
     })
   }
 
-  claimIncomingXp(): Promise<IncomingTransfer[]> {
-    return this.request<IncomingTransfer[]>('/activity/transfers/claim', { method: 'POST' })
+  listIncomingXp(): Promise<IncomingTransfer[]> {
+    return this.request<IncomingTransfer[]>('/activity/transfers/incoming')
+  }
+
+  async acknowledgeXp(ids: string[]): Promise<void> {
+    await this.request<void>('/activity/transfers/ack', {
+      method: 'POST',
+      body: JSON.stringify({ ids }),
+    })
   }
 }

@@ -5,7 +5,7 @@ import {
   type Middleware,
   type Reducer,
 } from '@reduxjs/toolkit'
-import auth, { login, logout } from '@/features/auth/authSlice'
+import auth, { login } from '@/features/auth/authSlice'
 import xp from '@/features/xp/xpSlice'
 import catalogue from '@/features/catalogue/catalogueSlice'
 import circulation from '@/features/circulation/circulationSlice'
@@ -13,6 +13,7 @@ import notifications from '@/features/notifications/notificationsSlice'
 import rewards from '@/features/rewards/rewardsSlice'
 import social from '@/features/social/socialSlice'
 import ui, { uiInitialState } from '@/features/ui/uiSlice'
+import { debug } from '@/services/debug'
 import { readJson, writeJson } from '@/services/storage'
 
 const combined = combineReducers({ auth, xp, catalogue, circulation, notifications, rewards, social, ui })
@@ -20,24 +21,37 @@ const combined = combineReducers({ auth, xp, catalogue, circulation, notificatio
 type RootShape = ReturnType<typeof combined>
 
 /**
- * Wipe one borrower's record when another takes over the device.
+ * Wipe one borrower's record when a *different* borrower takes over the device.
  *
  * Library machines and shared phones are normal here, and everything below auth
- * — XP, vouchers, loans, notifications — belongs to one borrower. Leaving it
+ * — XP, vouchers, loans, notifications — belongs to one person. Leaving it
  * behind would hand the next user someone else's wallet, which transfers make
- * plainly wrong. It goes on sign-out as well as on sign-in, because by the time
- * the next person signs in there is no previous user left to compare against.
+ * plainly wrong.
  *
- * Only `ui` survives: the theme belongs to the device, not the person.
+ * The comparison is against `lastBorrowerNumber`, not the live `user`, because
+ * sign-out clears the user: keying off that would wipe the record of anyone who
+ * merely signed out, and with XP held on the device that means losing it. Same
+ * borrower back in, nothing is touched.
+ *
+ * Only the theme survives a handover. The offline queue must not: a renewal one
+ * borrower captured offline would otherwise replay under the next borrower's
+ * session.
  */
 const rootReducer: Reducer<RootShape, Action, Partial<RootShape>> = (state, action) => {
-  const handover =
-    logout.fulfilled.match(action) ||
-    (login.fulfilled.match(action) &&
-      Boolean(state?.auth?.user) &&
-      state!.auth!.user!.borrowerNumber !== action.payload.user.borrowerNumber)
-
-  if (state && handover) state = { ui: state.ui }
+  if (state && login.fulfilled.match(action)) {
+    const previous = state.auth?.lastBorrowerNumber
+    const next = action.payload.user.borrowerNumber
+    debug('identity', 'sign-in', {
+      previous,
+      next,
+      handover: Boolean(previous && previous !== next),
+      xpBeing_discarded: previous && previous !== next ? state.xp?.balance : 0,
+      queuedOpsDiscarded: previous && previous !== next ? state.ui?.queue?.length : 0,
+    })
+    if (previous && previous !== next) {
+      state = { ui: { ...uiInitialState, theme: state.ui?.theme ?? uiInitialState.theme } }
+    }
+  }
   return combined(state, action)
 }
 
@@ -111,7 +125,32 @@ function writeNow(state: RootShape) {
   slice.ui = Object.fromEntries(
     PERSISTED_UI.map((key) => [key, state.ui[key]]),
   ) as unknown as RootShape['ui']
-  writeJson(PERSIST_KEY, { version: PERSIST_VERSION, state: slice })
+
+  const payload = { version: PERSIST_VERSION, state: slice }
+  writeJson(PERSIST_KEY, payload)
+  // Size is the value to watch: localStorage caps around 5MB per origin and
+  // `writeJson` swallows the quota error by design, so the first symptom of an
+  // over-large state is silently stale data rather than an exception.
+  debug('persist', 'wrote state', {
+    bytes: JSON.stringify(payload).length,
+    activities: state.xp.activities.length,
+    transfers: state.xp.transfers.length,
+    notifications: state.notifications.items?.length,
+    queued: state.ui.queue.length,
+    balance: state.xp.balance,
+    totalXp: state.xp.totalXp,
+  })
+}
+
+/**
+ * Force the debounced write to disk immediately.
+ *
+ * Used where losing the last 250ms of state is not survivable — acknowledging
+ * received XP to the server, for one: the acknowledgement is irreversible, so
+ * the credit has to be durable before it is sent.
+ */
+export function flushPersistence(): void {
+  flushPending?.()
 }
 
 const persistence: Middleware = (store) => (next) => (action) => {

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
 import type { Server } from 'node:http'
 import { buildApp } from './app.js'
+import { MAX_INBOX } from './transfers.js'
 
 /**
  * End-to-end over the real Express app on an ephemeral port, against the
@@ -448,29 +449,79 @@ describe('xp transfers', () => {
     assert.equal(sent.status, 201)
     assert.equal(sent.body.amount, 200)
 
-    const senderInbox = await call('/api/activity/transfers/claim', { method: 'POST', token: sender })
+    const senderInbox = await call('/api/activity/transfers/incoming', { token: sender })
     assert.deepEqual(senderInbox.body, [])
 
-    const claimed = await call('/api/activity/transfers/claim', { method: 'POST', token: recipient })
-    assert.equal(claimed.body.length, 1)
-    assert.equal(claimed.body[0].amount, 200)
-    assert.equal(claimed.body[0].note, 'For the group project')
-    assert.equal(claimed.body[0].id, sent.body.transferId)
+    const waiting = await call('/api/activity/transfers/incoming', { token: recipient })
+    assert.equal(waiting.body.length, 1)
+    assert.equal(waiting.body[0].amount, 200)
+    assert.equal(waiting.body[0].note, 'For the group project')
+    assert.equal(waiting.body[0].id, sent.body.transferId)
   })
 
-  it('clears the inbox on claim, so a reload cannot credit the same XP twice', async () => {
+  it('holds XP until the recipient acknowledges it, then drops it', async () => {
     const sender = await signIn('uj/2021/xfer/0003')
     const recipient = await signIn('uj/2021/xfer/0004')
-    await call('/api/activity/transfers', {
+    const sent = await call('/api/activity/transfers', {
       method: 'POST',
       token: sender,
       body: JSON.stringify({ identifier: 'uj/2021/xfer/0004', amount: 100 }),
     })
 
-    const first = await call('/api/activity/transfers/claim', { method: 'POST', token: recipient })
+    // Reading must not consume: a device that dies here has to see it again.
+    const first = await call('/api/activity/transfers/incoming', { token: recipient })
     assert.equal(first.body.length, 1)
-    const second = await call('/api/activity/transfers/claim', { method: 'POST', token: recipient })
-    assert.deepEqual(second.body, [])
+    const second = await call('/api/activity/transfers/incoming', { token: recipient })
+    assert.equal(second.body.length, 1)
+
+    const acked = await call('/api/activity/transfers/ack', {
+      method: 'POST',
+      token: recipient,
+      body: JSON.stringify({ ids: [sent.body.transferId] }),
+    })
+    assert.equal(acked.status, 204)
+
+    const after = await call('/api/activity/transfers/incoming', { token: recipient })
+    assert.deepEqual(after.body, [])
+  })
+
+  it('rejects an acknowledgement that is not a list of ids', async () => {
+    const token = await signIn('uj/2021/xfer/0007')
+    const { status } = await call('/api/activity/transfers/ack', {
+      method: 'POST',
+      token,
+      body: JSON.stringify({ ids: 'all' }),
+    })
+    assert.equal(status, 400)
+  })
+
+  it('refuses a transfer rather than trimming a full inbox', async () => {
+    const to = 'uj/2021/xfer/0009'
+    const recipient = await signIn(to)
+
+    // Fill the inbox from many senders, since one sender hits the weekly cap.
+    for (let i = 0; i < MAX_INBOX; i++) {
+      const from = await signIn(`uj/2021/full/${String(i).padStart(4, '0')}`)
+      const { status } = await call('/api/activity/transfers', {
+        method: 'POST',
+        token: from,
+        body: JSON.stringify({ identifier: to, amount: 50 }),
+      })
+      assert.equal(status, 201)
+    }
+
+    const overflow = await signIn('uj/2021/full/9999')
+    const { status, body } = await call('/api/activity/transfers', {
+      method: 'POST',
+      token: overflow,
+      body: JSON.stringify({ identifier: to, amount: 50 }),
+    })
+    assert.equal(status, 409)
+    assert.match(body.message, /uncollected/i)
+
+    // Nothing was silently discarded to make room.
+    const waiting = await call('/api/activity/transfers/incoming', { token: recipient })
+    assert.equal(waiting.body.length, MAX_INBOX)
   })
 
   it('rejects an amount below the minimum', async () => {
