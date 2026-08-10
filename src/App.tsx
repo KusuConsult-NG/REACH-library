@@ -21,6 +21,7 @@ import { loadCirculation } from '@/features/circulation/circulationSlice'
 import { loadTrending } from '@/features/catalogue/catalogueSlice'
 import { refreshReminders } from '@/features/notifications/reminders'
 import { flushQueue } from '@/features/offline/sync'
+import { claimIncomingXp } from '@/features/xp/transfers'
 import { setInstallAvailable, setOnline } from '@/features/ui/uiSlice'
 import { watchInstallPrompt } from '@/pwa'
 import { EmptyState } from '@/components/primitives'
@@ -73,6 +74,7 @@ function useBootstrap(authenticated: boolean) {
       void dispatch(loadTrending())
       dispatch(refreshReminders())
       void dispatch(flushQueue())
+      void dispatch(claimIncomingXp())
     })()
   }, [authenticated, dispatch])
 }

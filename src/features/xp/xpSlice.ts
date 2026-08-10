@@ -1,6 +1,7 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
 import { DAILY_CAPS, WEEKLY_XP_GOAL, XP_VALUES } from '@/config/xp'
-import type { Activity, ActivityKind } from '@/types'
+import { MAX_TRANSFER_HISTORY } from '@/config/transfers'
+import type { Activity, ActivityKind, XpTransfer } from '@/types'
 import { dayKey, weekKey } from '@/utils/date'
 
 export interface XpState {
@@ -21,6 +22,8 @@ export interface XpState {
   /** Consecutive days on which the user recorded at least one activity. */
   streak: number
   lastActiveDay: string | null
+  /** Wallet movements to and from other members, newest first. */
+  transfers: XpTransfer[]
 }
 
 const initialState: XpState = {
@@ -31,6 +34,7 @@ const initialState: XpState = {
   bonusPaidWeeks: [],
   streak: 0,
   lastActiveDay: null,
+  transfers: [],
 }
 
 /** Keep the activity log bounded — the dashboard only ever reads the recent tail. */
@@ -130,12 +134,45 @@ const xpSlice = createSlice({
     refund(state, action: PayloadAction<number>) {
       state.balance += action.payload
     },
+    /**
+     * Record a transfer and move the balance with it.
+     *
+     * Only `balance` changes. `totalXp` is what the level and the library's
+     * engagement reporting are built on, so it stays with whoever earned it.
+     */
+    recordTransfer(state, action: PayloadAction<XpTransfer>) {
+      const transfer = action.payload
+      if (transfer.direction === 'sent') {
+        state.balance = Math.max(0, state.balance - transfer.amount)
+      } else {
+        state.balance += transfer.amount
+      }
+      state.transfers.unshift(transfer)
+      if (state.transfers.length > MAX_TRANSFER_HISTORY) {
+        state.transfers.length = MAX_TRANSFER_HISTORY
+      }
+    },
     resetXp() {
       return initialState
     },
   },
 })
 
-export const { award, markWeeklyBonusPaid, setWeeklyGoal, confirmPending, spend, refund, resetXp } =
-  xpSlice.actions
+export function sentThisWeek(state: XpState, now: Date = new Date()): number {
+  const week = weekKey(now)
+  return state.transfers
+    .filter((t) => t.direction === 'sent' && weekKey(new Date(t.at)) === week)
+    .reduce((sum, t) => sum + t.amount, 0)
+}
+
+export const {
+  award,
+  markWeeklyBonusPaid,
+  setWeeklyGoal,
+  confirmPending,
+  spend,
+  refund,
+  recordTransfer,
+  resetXp,
+} = xpSlice.actions
 export default xpSlice.reducer

@@ -138,8 +138,18 @@ function developmentClaims(username: string, password: string): IdpClaims {
   if (password.trim().length < 4) {
     throw HttpError.unauthorized('That username and password combination was not recognised.')
   }
+  return developmentProfile(username)
+}
 
-  const normalised = username.toLowerCase()
+/**
+ * The profile half of a development identity, without the password check.
+ *
+ * Shared with the member directory: looking someone up to send them XP must
+ * produce the same name and department as signing in as them would, or the
+ * sender would be shown a different person from the one who receives it.
+ */
+export function developmentProfile(username: string): IdpClaims {
+  const normalised = username.trim().toLowerCase()
   const affiliation = normalised.startsWith('pg')
     ? 'postgraduate'
     : /^(dr|prof|staff)/.test(normalised)
@@ -196,6 +206,6 @@ function hashOf(value: string): number {
   return hash
 }
 
-function devBorrowerNumber(username: string): string {
-  return String(20000 + (hashOf(username.toLowerCase()) % 9000))
+export function devBorrowerNumber(username: string): string {
+  return String(20000 + (hashOf(username.trim().toLowerCase()) % 9000))
 }

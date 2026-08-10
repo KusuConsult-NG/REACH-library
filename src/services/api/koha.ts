@@ -7,7 +7,16 @@ import type {
   StudySpace,
   TrendingEntry,
 } from '@/types'
-import { ApiError, type LibraryApi, type SearchParams, type SearchResult, type Session } from './types'
+import {
+  ApiError,
+  type IncomingTransfer,
+  type LibraryApi,
+  type SearchParams,
+  type SearchResult,
+  type Session,
+  type TransferResult,
+  type TransferTarget,
+} from './types'
 import { readJson, writeJson } from '@/services/storage'
 
 /**
@@ -170,5 +179,28 @@ export class KohaLibraryApi implements LibraryApi {
       method: 'POST',
       body: JSON.stringify(input),
     })
+  }
+
+  async lookupMember(identifier: string): Promise<TransferTarget | undefined> {
+    try {
+      return await this.request<TransferTarget>(
+        `/activity/members/${encodeURIComponent(identifier)}`,
+      )
+    } catch (error) {
+      // "No such member" is an answer, not a failure the caller should handle.
+      if (error instanceof ApiError && error.code === 'not_found') return undefined
+      throw error
+    }
+  }
+
+  sendXp(identifier: string, amount: number, note?: string): Promise<TransferResult> {
+    return this.request<TransferResult>('/activity/transfers', {
+      method: 'POST',
+      body: JSON.stringify({ identifier, amount, note }),
+    })
+  }
+
+  claimIncomingXp(): Promise<IncomingTransfer[]> {
+    return this.request<IncomingTransfer[]>('/activity/transfers/claim', { method: 'POST' })
   }
 }

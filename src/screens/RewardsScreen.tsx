@@ -4,6 +4,7 @@ import { CHEAPEST_REWARD, REWARDS } from '@/config/rewards'
 import { redeemReward, shareVoucher } from '@/features/rewards/actions'
 import { expireStale, markUsed, removeVoucher } from '@/features/rewards/rewardsSlice'
 import { EmptyState } from '@/components/primitives'
+import { SendXpCard } from '@/components/SendXpCard'
 import { CheckIcon, StarIcon } from '@/components/icons'
 import { formatDate, relativeTime } from '@/utils/date'
 
@@ -11,12 +12,16 @@ export function RewardsScreen() {
   const dispatch = useAppDispatch()
   const { balance, totalXp } = useAppSelector((state) => state.xp)
   const vouchers = useAppSelector((state) => state.rewards.vouchers)
+  const transfers = useAppSelector((state) => state.xp.transfers)
 
   // Anything past its date should say so the moment the screen opens.
   useEffect(() => {
     dispatch(expireStale())
   }, [dispatch])
 
+  const received = transfers
+    .filter((transfer) => transfer.direction === 'received')
+    .reduce((sum, transfer) => sum + transfer.amount, 0)
   const active = vouchers.filter((voucher) => voucher.status === 'active')
   const past = vouchers.filter((voucher) => voucher.status !== 'active')
   const shortfall = CHEAPEST_REWARD.cost - balance
@@ -31,8 +36,11 @@ export function RewardsScreen() {
           {balance.toLocaleString()} XP
         </h2>
         <p className="small" style={{ opacity: 0.85 }}>
-          {totalXp.toLocaleString()} XP earned in total. Spending never reduces your level — the two are
-          counted separately.
+          {totalXp.toLocaleString()} XP earned in total — that is what sets your level, and spending never
+          lowers it.
+          {received > 0
+            ? ` The ${received.toLocaleString()} XP sent to you adds to what you can spend, not to your level.`
+            : ''}
         </p>
         {balance < CHEAPEST_REWARD.cost ? (
           <p className="small" style={{ marginTop: 'var(--space-3)', fontWeight: 650 }}>
@@ -41,11 +49,44 @@ export function RewardsScreen() {
         ) : null}
       </section>
 
+      <SendXpCard />
+
+      {transfers.length > 0 ? (
+        <section aria-labelledby="transfers-heading">
+          <div className="section__head">
+            <h2 id="transfers-heading">Transfers</h2>
+          </div>
+          <ul className="card card--flush list">
+            {transfers.slice(0, 8).map((transfer) => (
+              <li key={transfer.id} className="listitem">
+                <span className="listitem__icon listitem__icon--xp" aria-hidden="true">
+                  <StarIcon size={18} />
+                </span>
+                <span style={{ minWidth: 0, flex: 1 }}>
+                  <span style={{ fontWeight: 650, fontSize: '0.92rem', display: 'block' }}>
+                    {transfer.direction === 'sent' ? 'Sent to' : 'Received from'}{' '}
+                    {transfer.counterpartyName}
+                  </span>
+                  <span className="resource__meta">
+                    {relativeTime(transfer.at)}
+                    {transfer.note ? ` · “${transfer.note}”` : ''}
+                  </span>
+                </span>
+                <span className={transfer.direction === 'sent' ? 'tag' : 'tag tag--available'}>
+                  {transfer.direction === 'sent' ? '−' : '+'}
+                  {transfer.amount.toLocaleString()} XP
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
       <section aria-labelledby="catalogue-heading">
         <div className="section__head">
           <h2 id="catalogue-heading">What you can redeem</h2>
         </div>
-        <ul className="quickgrid">
+        <ul className="rewardgrid">
           {REWARDS.map((reward) => {
             const affordable = balance >= reward.cost
             return (
@@ -138,8 +179,8 @@ export function RewardsScreen() {
         )}
 
         <p className="small muted" style={{ marginTop: 'var(--space-3)' }}>
-          A voucher belongs to whoever presents the code, so giving one away is how you share credit. XP
-          itself stays on your account — it measures your own use of the library.
+          A voucher belongs to whoever presents the code, so giving one away is another way to share —
+          useful when you want to hand over something specific rather than credit.
         </p>
       </section>
 

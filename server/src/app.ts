@@ -4,6 +4,7 @@ import { errorHandler, notFoundHandler } from './errors.js'
 import { FixtureLibraryService } from './fixtures/service.js'
 import { KohaClient } from './koha/client.js'
 import { KohaLibraryService } from './koha/service.js'
+import { devDirectory, kohaDirectory, type MemberDirectory } from './directory.js'
 import { assertDevIdentityAllowed, type PatronLookup } from './idp.js'
 import { activityRoutes } from './routes/activity.js'
 import { authRoutes } from './routes/auth.js'
@@ -39,12 +40,14 @@ export async function buildApp(options: BuildOptions = {}): Promise<Express> {
 
   let service = options.service
   let lookupPatron: PatronLookup | undefined
+  let directory: MemberDirectory = devDirectory()
 
   if (!service) {
     if (usingLiveKoha) {
       const koha = new KohaClient(config.koha.baseUrl, config.koha.clientId, config.koha.clientSecret)
       service = new KohaLibraryService(koha, store)
       lookupPatron = patronLookupFor(koha)
+      directory = kohaDirectory(koha)
     } else {
       service = new FixtureLibraryService(store)
     }
@@ -94,7 +97,7 @@ export async function buildApp(options: BuildOptions = {}): Promise<Express> {
   app.use('/api/circulation', circulationRoutes(service, store))
   app.use('/api/spaces', spaceRoutes(store))
   app.use('/api/consultations', consultationRoutes(store))
-  app.use('/api/activity', activityRoutes(store))
+  app.use('/api/activity', activityRoutes(store, directory))
 
   app.use(notFoundHandler)
   app.use(errorHandler)

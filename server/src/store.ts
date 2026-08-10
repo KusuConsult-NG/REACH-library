@@ -1,5 +1,6 @@
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import { dirname } from 'node:path'
+import type { IncomingTransfer } from './transfers.js'
 import type { Activity, ConsultationRequest, SpaceBooking } from './types.js'
 
 /**
@@ -24,6 +25,10 @@ export interface StoreShape {
   bonusWeeks: Record<string, string[]>
   /** Rolling access counts per resource, used for trending. */
   accessCounts: Record<string, number>
+  /** XP sent but not yet collected, keyed by the recipient's borrower number. */
+  inbox: Record<string, IncomingTransfer[]>
+  /** XP sent per borrower per ISO week, for the weekly transfer ceiling. */
+  sentByWeek: Record<string, number>
 }
 
 function empty(): StoreShape {
@@ -35,6 +40,8 @@ function empty(): StoreShape {
     activity: {},
     bonusWeeks: {},
     accessCounts: {},
+    inbox: {},
+    sentByWeek: {},
   }
 }
 

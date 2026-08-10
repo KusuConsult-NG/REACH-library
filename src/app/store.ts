@@ -1,5 +1,11 @@
-import { combineReducers, configureStore, type Middleware } from '@reduxjs/toolkit'
-import auth from '@/features/auth/authSlice'
+import {
+  combineReducers,
+  configureStore,
+  type Action,
+  type Middleware,
+  type Reducer,
+} from '@reduxjs/toolkit'
+import auth, { login, logout } from '@/features/auth/authSlice'
 import xp from '@/features/xp/xpSlice'
 import catalogue from '@/features/catalogue/catalogueSlice'
 import circulation from '@/features/circulation/circulationSlice'
@@ -9,7 +15,31 @@ import social from '@/features/social/socialSlice'
 import ui, { uiInitialState } from '@/features/ui/uiSlice'
 import { readJson, writeJson } from '@/services/storage'
 
-const rootReducer = combineReducers({ auth, xp, catalogue, circulation, notifications, rewards, social, ui })
+const combined = combineReducers({ auth, xp, catalogue, circulation, notifications, rewards, social, ui })
+
+type RootShape = ReturnType<typeof combined>
+
+/**
+ * Wipe one borrower's record when another takes over the device.
+ *
+ * Library machines and shared phones are normal here, and everything below auth
+ * — XP, vouchers, loans, notifications — belongs to one borrower. Leaving it
+ * behind would hand the next user someone else's wallet, which transfers make
+ * plainly wrong. It goes on sign-out as well as on sign-in, because by the time
+ * the next person signs in there is no previous user left to compare against.
+ *
+ * Only `ui` survives: the theme belongs to the device, not the person.
+ */
+const rootReducer: Reducer<RootShape, Action, Partial<RootShape>> = (state, action) => {
+  const handover =
+    logout.fulfilled.match(action) ||
+    (login.fulfilled.match(action) &&
+      Boolean(state?.auth?.user) &&
+      state!.auth!.user!.borrowerNumber !== action.payload.user.borrowerNumber)
+
+  if (state && handover) state = { ui: state.ui }
+  return combined(state, action)
+}
 
 /**
  * Slices worth restoring on next launch. Everything here is either the user's
@@ -27,8 +57,6 @@ const PERSISTED = ['auth', 'xp', 'catalogue', 'circulation', 'notifications', 'r
 const PERSISTED_UI = ['theme', 'queue'] as const
 const PERSIST_KEY = 'state'
 const PERSIST_VERSION = 1
-
-type RootShape = ReturnType<typeof rootReducer>
 
 function loadPersisted(): Partial<RootShape> | undefined {
   const saved = readJson<{ version: number; state: Partial<RootShape> } | null>(PERSIST_KEY, null)

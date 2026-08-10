@@ -108,6 +108,18 @@ export interface Activity {
   pending?: boolean
 }
 
+/** One movement of spendable XP between two members. */
+export interface XpTransfer {
+  id: string
+  direction: 'sent' | 'received'
+  /** The other party, as they should be shown to this member. */
+  counterpartyName: string
+  counterpartyId: string
+  amount: number
+  note?: string
+  at: string
+}
+
 /** A reward that has been paid for and is waiting to be presented. */
 export interface Voucher {
   id: string

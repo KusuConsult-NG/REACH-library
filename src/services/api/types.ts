@@ -47,6 +47,30 @@ export interface Session {
  * proxy that fronts Koha's REST API and the university IdP. Screens and slices
  * only ever depend on this interface, so swapping the two changes no UI code.
  */
+/** A member another member is about to send XP to. */
+export interface TransferTarget {
+  id: string
+  name: string
+  department: string
+}
+
+export interface TransferResult {
+  transferId: string
+  recipient: TransferTarget
+  amount: number
+  at: string
+}
+
+/** XP addressed to this member that has not been applied to their wallet yet. */
+export interface IncomingTransfer {
+  id: string
+  fromName: string
+  fromId: string
+  amount: number
+  note?: string
+  at: string
+}
+
 export interface LibraryApi {
   login(username: string, password: string): Promise<Session>
   logout(): Promise<void>
@@ -72,6 +96,12 @@ export interface LibraryApi {
   requestConsultation(
     input: Omit<ConsultationRequest, 'id' | 'submittedAt' | 'status'>,
   ): Promise<ConsultationRequest>
+
+  /** Confirm a recipient exists before any XP moves. */
+  lookupMember(identifier: string): Promise<TransferTarget | undefined>
+  sendXp(identifier: string, amount: number, note?: string): Promise<TransferResult>
+  /** Collect anything sent to this member since they last looked. */
+  claimIncomingXp(): Promise<IncomingTransfer[]>
 }
 
 export class ApiError extends Error {

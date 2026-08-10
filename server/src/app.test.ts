@@ -413,6 +413,105 @@ describe('activity and XP', () => {
   })
 })
 
+describe('xp transfers', () => {
+  const SENDER = 'uj/2021/xfer/0001'
+  const RECIPIENT = 'uj/2021/xfer/0002'
+
+  it('names the recipient before any XP moves', async () => {
+    const token = await signIn(SENDER)
+    const { status, body } = await call(`/api/activity/members/${encodeURIComponent(RECIPIENT)}`, {
+      token,
+    })
+    assert.equal(status, 200)
+    assert.ok(body.id)
+    assert.ok(body.name)
+    assert.ok(body.department)
+    // A directory lookup must not leak contact details out of the borrower file.
+    assert.deepEqual(Object.keys(body).sort(), ['department', 'id', 'name'])
+  })
+
+  it('refuses a member their own account as a recipient', async () => {
+    const token = await signIn(SENDER)
+    const { status } = await call(`/api/activity/members/${encodeURIComponent(SENDER)}`, { token })
+    assert.equal(status, 409)
+  })
+
+  it('delivers XP to the recipient, and only to the recipient', async () => {
+    const sender = await signIn(SENDER)
+    const recipient = await signIn(RECIPIENT)
+
+    const sent = await call('/api/activity/transfers', {
+      method: 'POST',
+      token: sender,
+      body: JSON.stringify({ identifier: RECIPIENT, amount: 200, note: 'For the group project' }),
+    })
+    assert.equal(sent.status, 201)
+    assert.equal(sent.body.amount, 200)
+
+    const senderInbox = await call('/api/activity/transfers/claim', { method: 'POST', token: sender })
+    assert.deepEqual(senderInbox.body, [])
+
+    const claimed = await call('/api/activity/transfers/claim', { method: 'POST', token: recipient })
+    assert.equal(claimed.body.length, 1)
+    assert.equal(claimed.body[0].amount, 200)
+    assert.equal(claimed.body[0].note, 'For the group project')
+    assert.equal(claimed.body[0].id, sent.body.transferId)
+  })
+
+  it('clears the inbox on claim, so a reload cannot credit the same XP twice', async () => {
+    const sender = await signIn('uj/2021/xfer/0003')
+    const recipient = await signIn('uj/2021/xfer/0004')
+    await call('/api/activity/transfers', {
+      method: 'POST',
+      token: sender,
+      body: JSON.stringify({ identifier: 'uj/2021/xfer/0004', amount: 100 }),
+    })
+
+    const first = await call('/api/activity/transfers/claim', { method: 'POST', token: recipient })
+    assert.equal(first.body.length, 1)
+    const second = await call('/api/activity/transfers/claim', { method: 'POST', token: recipient })
+    assert.deepEqual(second.body, [])
+  })
+
+  it('rejects an amount below the minimum', async () => {
+    const token = await signIn(SENDER)
+    const { status } = await call('/api/activity/transfers', {
+      method: 'POST',
+      token,
+      body: JSON.stringify({ identifier: RECIPIENT, amount: 10 }),
+    })
+    assert.equal(status, 400)
+  })
+
+  it('enforces the weekly ceiling on the server, whatever the client believes', async () => {
+    const token = await signIn('uj/2021/xfer/0005')
+    const to = 'uj/2021/xfer/0006'
+
+    const first = await call('/api/activity/transfers', {
+      method: 'POST',
+      token,
+      body: JSON.stringify({ identifier: to, amount: 1000 }),
+    })
+    assert.equal(first.status, 201)
+
+    const second = await call('/api/activity/transfers', {
+      method: 'POST',
+      token,
+      body: JSON.stringify({ identifier: to, amount: 50 }),
+    })
+    assert.equal(second.status, 409)
+    assert.match(second.body.message, /weekly limit/i)
+  })
+
+  it('requires a session', async () => {
+    const { status } = await call('/api/activity/transfers', {
+      method: 'POST',
+      body: JSON.stringify({ identifier: RECIPIENT, amount: 100 }),
+    })
+    assert.equal(status, 401)
+  })
+})
+
 describe('unknown routes', () => {
   it('404s with JSON rather than HTML', async () => {
     const { status, body } = await call('/api/nope')

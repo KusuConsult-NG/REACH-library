@@ -40,7 +40,7 @@ installability and offline behaviour.
 | --- | --- |
 | 3.1 Authentication & profile | Sign-in, borrower profile, XP level, current loans, privacy controls |
 | 3.2 Resource discovery & access | Catalogue search with facets, filters and sorting; borrowing, holds, renewals, loan history; e-resource access with proxy pass-through |
-| 3.3 XP reward system | All five PRD earning rules, 15 levels, activity log, weekly goals with bonus, daily caps |
+| 3.3 XP reward system | All five PRD earning rules, 15 levels, activity log, weekly goals with bonus, daily caps, spending XP on library rewards, transfers between members |
 | 3.4 Notifications | Due-date reminders, overdue notices, hold-ready, new resources by interest, XP milestones, announcements, return confirmations |
 | 3.5 Social features | Following, trending by subject, de-identified activity feed, per-feature privacy controls |
 | 3.6 Practical tools | Hours and contacts, study-space availability and booking, librarian consultation form, floor maps, FAQs |
@@ -64,6 +64,28 @@ Daily caps are a deliberate addition to the PRD's table: without them the repeat
 tab-refreshing rather than engagement. Capped activities are still recorded in the activity log, at
 zero XP, so the dashboard stays honest about what the user did. All values live in
 [`src/config/xp.ts`](src/config/xp.ts).
+
+### Spending and sharing XP
+
+XP is counted twice over, on purpose:
+
+- **Total XP** is everything ever earned. It never falls, and it alone sets the level and the
+  engagement figures the library reports under PRD §6.
+- **Balance** is what is left to spend. It rises with the same earnings and falls when XP is
+  redeemed or sent to someone else.
+
+Keeping them apart is what lets XP be spent at all. Redeeming a reward
+([`src/config/rewards.ts`](src/config/rewards.ts)) issues a dated voucher code to present at the
+circulation desk — an extra loan slot, printing at the Digital Commons, a week's extension, priority
+room booking. Codes avoid `O`, `I`, `S`, `0`, `1` and `5` because they get read aloud at a desk.
+
+Members can also send XP to one another from **Spend your XP**. The recipient is resolved and shown
+by name, department and borrower number *before* an amount is confirmed, since a mistyped
+matriculation number would otherwise send credit to a stranger with no way back. Transfers move the
+balance only — a level is never bought — with a 50 XP minimum and a 1,000 XP weekly ceiling enforced
+by the backend rather than the browser ([`src/config/transfers.ts`](src/config/transfers.ts)).
+Incoming XP is parked for the recipient and collected on their next sign-in; collecting clears it, so
+a reload cannot credit the same transfer twice.
 
 ## Architecture
 

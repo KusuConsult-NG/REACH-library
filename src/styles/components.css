@@ -1199,6 +1199,17 @@
   color: var(--brand-700);
 }
 
+/*
+ * Reward cards carry a full sentence of a name ("20 sheets of printing") and a
+ * cost tag beside it, which will not sit in half a phone's width without
+ * breaking into a column of single words. One per row until there is room.
+ */
+.rewardgrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-3);
+}
+
 /* ---------------------------------------------------------- desktop app -- */
 
 /*
@@ -1363,5 +1374,12 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
     align-items: start;
     gap: var(--space-5);
+  }
+}
+
+/* Enough width for a name and its cost side by side, so pair the cards up. */
+@media (min-width: 560px) {
+  .rewardgrid {
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   }
 }

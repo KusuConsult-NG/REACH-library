@@ -3,6 +3,7 @@ import { Accordion } from '@/components/primitives'
 import { FAQS } from '@/services/api/seed'
 import { XP_VALUES, DAILY_CAPS, LEVEL_TITLES } from '@/config/xp'
 import { REWARDS } from '@/config/rewards'
+import { WEEKLY_TRANSFER_LIMIT } from '@/config/transfers'
 
 export function HelpScreen() {
   return (
@@ -68,9 +69,14 @@ export function HelpScreen() {
           ))}
           <hr className="divider" />
           <p className="muted">
-            Redeeming issues a voucher code. Show it at the circulation desk before it expires. A voucher
-            belongs to whoever presents it, so you can give one to a friend — use “Give to someone” to send
-            them the code. XP itself cannot be transferred: it records your own use of the library.
+            Redeeming issues a voucher code. Show it at the circulation desk before it expires, or pass
+            the code to a friend — a voucher belongs to whoever presents it.
+          </p>
+          <p className="muted">
+            You can also send XP straight to another member from the Spend your XP screen. Only your
+            spendable balance moves: your total XP and level stay with you, because they record your own
+            use of the library. Transfers are capped at {WEEKLY_TRANSFER_LIMIT.toLocaleString()} XP a week
+            and every one is logged.
           </p>
         </div>
       </section>

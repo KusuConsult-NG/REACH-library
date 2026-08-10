@@ -10,7 +10,17 @@ import type {
   User,
   UserRole,
 } from '@/types'
-import { ApiError, type LibraryApi, type SearchParams, type SearchResult, type Session } from './types'
+import {
+  ApiError,
+  type IncomingTransfer,
+  type LibraryApi,
+  type SearchParams,
+  type SearchResult,
+  type Session,
+  type TransferResult,
+  type TransferTarget,
+} from './types'
+import { MIN_TRANSFER, WEEKLY_TRANSFER_LIMIT } from '@/config/transfers'
 import { RESOURCES, STUDY_SPACES } from './seed'
 
 /** Loan allowances by borrower category, mirroring the circulation policy. */
@@ -30,6 +40,14 @@ interface MockState {
   /** Per-resource availability deltas applied on top of the seed data. */
   availability: Record<string, number>
   accessCounts: Record<string, number>
+  /**
+   * XP in flight between members, keyed by the recipient's borrower number.
+   * The recipient's device claims it on next sign-in, which is how a transfer
+   * reaches an account that is not the one that sent it.
+   */
+  inbox: Record<string, IncomingTransfer[]>
+  /** Amount each member has sent, per ISO week, for the weekly ceiling. */
+  sentByWeek: Record<string, number>
 }
 
 /**
@@ -45,6 +63,8 @@ function emptyState(): MockState {
     consultations: [],
     availability: {},
     accessCounts: {},
+    inbox: {},
+    sentByWeek: {},
   }
 }
 
@@ -127,15 +147,37 @@ function profileFor(username: string): User {
   // A matriculation number carries no name, so the demo backend assigns a
   // stable one from the credential's hash. A real deployment takes the name
   // from the IdP's profile claim instead.
-  const DEMO_NAMES = [
-    'Amina Bello',
-    'Terhemba Iorlaha',
-    'Chidera Okafor',
-    'Gyang Pam',
-    'Fatima Sani',
-    'Nanle Dashe',
-    'Oluwaseun Adebayo',
-    'Rahila Musa',
+  //
+  // Given and family names are drawn independently: a single list of eight full
+  // names collides often enough that two demo accounts end up sharing one, and
+  // "Sent to Fatima Sani" is no use when both of you are Fatima Sani.
+  const GIVEN_NAMES = [
+    'Amina',
+    'Terhemba',
+    'Chidera',
+    'Gyang',
+    'Fatima',
+    'Nanle',
+    'Oluwaseun',
+    'Rahila',
+    'Ibrahim',
+    'Ngozi',
+    'Dauda',
+    'Yakubu',
+  ]
+  const FAMILY_NAMES = [
+    'Bello',
+    'Iorlaha',
+    'Okafor',
+    'Pam',
+    'Sani',
+    'Dashe',
+    'Adebayo',
+    'Musa',
+    'Danjuma',
+    'Emmanuel',
+    'Chollom',
+    'Longpoe',
   ]
   // Honorifics and faculty codes are not names: "STAFF/LIB/0031" should not
   // produce a member called "Staff Lib".
@@ -150,7 +192,9 @@ function profileFor(username: string): User {
   const name =
     words.length >= 2
       ? words.map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(' ')
-      : DEMO_NAMES[hash % DEMO_NAMES.length]
+      : `${GIVEN_NAMES[hash % GIVEN_NAMES.length]} ${
+          FAMILY_NAMES[Math.floor(hash / GIVEN_NAMES.length) % FAMILY_NAMES.length]
+        }`
 
   return {
     id: `u-${hash.toString(16)}`,
@@ -170,6 +214,18 @@ function profileFor(username: string): User {
     borrowerNumber: String(20000 + (hash % 9000)),
     joinedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 240).toISOString(),
   }
+}
+
+/** ISO-8601 week key, matching `weekKey` in the web app's date utilities. */
+function weekKeyFor(date: Date): string {
+  const value = new Date(date.getTime())
+  value.setHours(0, 0, 0, 0)
+  value.setDate(value.getDate() + 3 - ((value.getDay() + 6) % 7))
+  const isoYear = value.getFullYear()
+  const firstThursday = new Date(isoYear, 0, 4)
+  firstThursday.setDate(firstThursday.getDate() + 3 - ((firstThursday.getDay() + 6) % 7))
+  const week = 1 + Math.round((value.getTime() - firstThursday.getTime()) / (7 * 24 * 60 * 60 * 1000))
+  return `${isoYear}-W${String(week).padStart(2, '0')}`
 }
 
 function resourceById(id: string): Resource | undefined {
@@ -552,6 +608,66 @@ export class MockLibraryApi implements LibraryApi {
   async getBookings(): Promise<SpaceBooking[]> {
     await wait(40)
     return this.state.bookings
+  }
+
+  async lookupMember(identifier: string): Promise<TransferTarget | undefined> {
+    await wait(80)
+    const trimmed = identifier.trim()
+    if (trimmed.length < 3) return undefined
+
+    const me = this.session().user
+    const target = profileFor(trimmed)
+    if (target.borrowerNumber === me.borrowerNumber) {
+      throw new ApiError('That is your own account.', 'limit_reached')
+    }
+    return { id: target.borrowerNumber, name: target.name, department: target.department }
+  }
+
+  async sendXp(identifier: string, amount: number, note?: string): Promise<TransferResult> {
+    await latency()
+    const me = this.session().user
+
+    if (!Number.isFinite(amount) || amount < MIN_TRANSFER) {
+      throw new ApiError(`The smallest transfer is ${MIN_TRANSFER} XP.`, 'limit_reached')
+    }
+    const whole = Math.floor(amount)
+
+    const recipient = await this.lookupMember(identifier)
+    if (!recipient) throw new ApiError('No member matches that number.', 'not_found')
+
+    // The weekly ceiling is enforced here, not in the browser, because a limit
+    // a client enforces is not a limit.
+    const key = `${me.borrowerNumber}:${weekKeyFor(new Date())}`
+    const alreadySent = this.state.sentByWeek[key] ?? 0
+    if (alreadySent + whole > WEEKLY_TRANSFER_LIMIT) {
+      throw new ApiError(
+        `That would pass your weekly limit of ${WEEKLY_TRANSFER_LIMIT} XP. You have ${
+          WEEKLY_TRANSFER_LIMIT - alreadySent
+        } XP left to send this week.`,
+        'limit_reached',
+      )
+    }
+
+    const at = new Date().toISOString()
+    const transferId = id('xfer')
+    this.state.sentByWeek[key] = alreadySent + whole
+    const inbox = (this.state.inbox[recipient.id] ??= [])
+    inbox.push({ id: transferId, fromName: me.name, fromId: me.borrowerNumber, amount: whole, note, at })
+    this.commit()
+
+    return { transferId, recipient, amount: whole, at }
+  }
+
+  async claimIncomingXp(): Promise<IncomingTransfer[]> {
+    await wait(60)
+    const me = this.session().user
+    const waiting = this.state.inbox[me.borrowerNumber] ?? []
+    if (waiting.length === 0) return []
+
+    // Handing them over clears them, so a reload cannot credit them twice.
+    this.state.inbox[me.borrowerNumber] = []
+    this.commit()
+    return waiting
   }
 
   async requestConsultation(

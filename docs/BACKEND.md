@@ -117,6 +117,36 @@ one thunk (`recordEngagement` in [`src/features/xp/engagement.ts`](../src/featur
 so the migration is contained — but it has to reconcile a local ledger with the server's without
 breaking offline use, which is a change of its own.
 
+## XP transfers
+
+Members can pass spendable XP to one another. Only the wallet moves: lifetime XP stays in the
+activity ledger with whoever earned it, so a transfer cannot manufacture engagement and the level and
+§6 reporting figures stay honest.
+
+| Method | Path | Body | Returns |
+| --- | --- | --- | --- |
+| GET | `/activity/members/:identifier` | — | `{ id, name, department }` |
+| POST | `/activity/transfers` | `{ identifier, amount, note? }` | `{ transferId, recipient, amount, at }` |
+| POST | `/activity/transfers/claim` | — | `IncomingTransfer[]` |
+
+The lookup exists so the sender sees who they are about to pay before any XP moves — a mistyped
+matriculation number would otherwise send credit to a stranger with no way back. It returns the
+minimum needed to recognise a colleague and never an email, phone number or address, so the endpoint
+cannot be walked to reconstruct the borrower file. It answers `409` for the caller's own account and
+`404` for an unknown number.
+
+Ceilings are enforced on the server, not in the browser: a minimum of 50 XP per transfer and 1,000 XP
+sent per ISO week per borrower (`server/src/transfers.ts`; keep in step with
+[`src/config/transfers.ts`](../src/config/transfers.ts)). Below the minimum is `400`; over the weekly
+ceiling is `409` with the remaining allowance in the message.
+
+Delivery is by inbox rather than by push: a transfer is parked against the recipient's borrower
+number, and their device collects it on next sign-in. Claiming clears the inbox in the same write, so
+a reload cannot credit the same transfer twice.
+
+The spendable balance itself is still client-side, because redemptions are — the server enforces
+identity, the minimum and the weekly ceiling, and the wallet arithmetic moves here when vouchers do.
+
 ## Push notifications
 
 In-app notifications are derived from state on every launch

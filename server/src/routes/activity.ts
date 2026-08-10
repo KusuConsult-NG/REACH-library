@@ -3,6 +3,8 @@ import { asyncRoute, HttpError } from '../errors.js'
 import { requireSession, type AuthedRequest } from '../session.js'
 import type { Store } from '../store.js'
 import { CLIENT_ACTIVITY_KINDS, ledgerFor, recordActivity } from '../xp.js'
+import { claimIncoming, sendXp } from '../transfers.js'
+import type { MemberDirectory } from '../directory.js'
 import type { ActivityKind } from '../types.js'
 
 /**
@@ -12,7 +14,7 @@ import type { ActivityKind } from '../types.js'
  * the five earning kinds may be claimed — bonuses are the server's to award,
  * or a client could simply post itself a weekly bonus.
  */
-export function activityRoutes(store: Store): Router {
+export function activityRoutes(store: Store, directory: MemberDirectory): Router {
   const router = Router()
   router.use(requireSession)
 
@@ -39,6 +41,52 @@ export function activityRoutes(store: Store): Router {
       })
 
       res.status(201).json(result)
+    }),
+  )
+
+  /**
+   * Name a member before XP is sent to them, so a mistyped digit is caught by
+   * the sender rather than by the stranger who receives the credit.
+   */
+  router.get(
+    '/members/:identifier',
+    asyncRoute(async (req: AuthedRequest, res) => {
+      const member = await directory.lookup(req.params.identifier ?? '')
+      if (!member) throw HttpError.notFound('No member matches that number.')
+      if (member.id === req.user.borrowerNumber) throw HttpError.conflict('That is your own account.')
+      res.json(member)
+    }),
+  )
+
+  router.post(
+    '/transfers',
+    asyncRoute(async (req: AuthedRequest, res) => {
+      const { identifier, amount, note } = (req.body ?? {}) as Record<string, unknown>
+      if (typeof identifier !== 'string' || !identifier.trim()) {
+        throw HttpError.badRequest('identifier is required')
+      }
+      if (typeof amount !== 'number') {
+        throw HttpError.badRequest('amount must be a number')
+      }
+
+      const recipient = await directory.lookup(identifier)
+      if (!recipient) throw HttpError.notFound('No member matches that number.')
+
+      const result = await sendXp(
+        store,
+        req.user,
+        recipient,
+        amount,
+        typeof note === 'string' ? note : undefined,
+      )
+      res.status(201).json(result)
+    }),
+  )
+
+  router.post(
+    '/transfers/claim',
+    asyncRoute(async (req: AuthedRequest, res) => {
+      res.json(await claimIncoming(store, req.user))
     }),
   )
 

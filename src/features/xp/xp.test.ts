@@ -12,6 +12,7 @@ const base: XpState = {
   bonusPaidWeeks: [],
   streak: 0,
   lastActiveDay: null,
+  transfers: [],
 }
 
 describe('levelFromXp', () => {
