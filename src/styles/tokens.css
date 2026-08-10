@@ -43,13 +43,13 @@
 
   --surface: #ffffff;
   --surface-raised: #ffffff;
-  --surface-sunken: #f0f7fb;
-  --page: #f7fcff;
-  --border: #e2eef5;
-  --border-strong: #c4dcea;
+  --surface-sunken: #eef4f9;
+  --page: #eaf1f7;
+  --border: #dbe6ee;
+  --border-strong: #bed2e0;
 
-  --text: #10293d;
-  --text-muted: #4e6c82;
+  --text: #0d2438;
+  --text-muted: #4a6a82;
   --text-inverse: #ffffff;
 
   --accent: var(--brand-700);
@@ -66,11 +66,11 @@
   --topbar-btn: rgb(15 53 87 / 9%);
   --topbar-btn-hover: rgb(15 53 87 / 16%);
 
-  --hero-from: #ebf7fe;
-  --hero-to: #a5e0fd;
+  --hero-from: #d6efff;
+  --hero-to: #8ed4fb;
   --hero-fg: #0f3557;
-  --hero-tile: rgb(255 255 255 / 62%);
-  --hero-track: rgb(15 53 87 / 15%);
+  --hero-tile: rgb(255 255 255 / 72%);
+  --hero-track: rgb(15 53 87 / 18%);
   --hero-accent: #0077b6;
 
   /* The sign-in screen stays near-white, so the app opens light, not dark. */
@@ -84,9 +84,12 @@
   --radius-lg: 22px;
   --radius-pill: 999px;
 
-  --shadow-sm: 0 1px 2px rgb(15 53 87 / 7%);
-  --shadow: 0 4px 16px rgb(15 53 87 / 9%);
-  --shadow-lg: 0 12px 32px rgb(15 53 87 / 16%);
+  /* Cards sit on a tinted page, so a soft two-part shadow reads as raised
+     without the heavy border that made every block look identical. */
+  --shadow-sm: 0 1px 2px rgb(13 36 56 / 6%), 0 1px 1px rgb(13 36 56 / 4%);
+  --shadow: 0 2px 4px rgb(13 36 56 / 5%), 0 8px 20px rgb(13 36 56 / 7%);
+  --shadow-lg: 0 8px 16px rgb(13 36 56 / 10%), 0 24px 48px rgb(13 36 56 / 14%);
+  --shadow-hover: 0 4px 8px rgb(13 36 56 / 7%), 0 14px 32px rgb(13 36 56 / 12%);
 
   --space-1: 4px;
   --space-2: 8px;
@@ -105,10 +108,10 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
-    --surface: #10263a;
-    --surface-raised: #16314a;
-    --surface-sunken: #08131f;
-    --page: #0b1b2a;
+    --surface: #12293e;
+    --surface-raised: #16324c;
+    --surface-sunken: #0d2135;
+    --page: #0a1826;
     --border: #24405c;
     --border-strong: #35597c;
 
@@ -154,17 +157,18 @@
     --auth-to: #17456b;
     --auth-fg: #e6f4fd;
 
-    --shadow-sm: 0 1px 2px rgb(0 0 0 / 40%);
-    --shadow: 0 4px 16px rgb(0 0 0 / 45%);
-    --shadow-lg: 0 12px 32px rgb(0 0 0 / 55%);
+    --shadow-sm: 0 1px 2px rgb(0 0 0 / 35%);
+    --shadow: 0 2px 4px rgb(0 0 0 / 30%), 0 8px 20px rgb(0 0 0 / 35%);
+    --shadow-lg: 0 8px 16px rgb(0 0 0 / 40%), 0 24px 48px rgb(0 0 0 / 45%);
+    --shadow-hover: 0 4px 8px rgb(0 0 0 / 35%), 0 14px 32px rgb(0 0 0 / 45%);
   }
 }
 
 :root[data-theme='dark'] {
-  --surface: #10263a;
-  --surface-raised: #16314a;
-  --surface-sunken: #08131f;
-  --page: #0b1b2a;
+  --surface: #12293e;
+  --surface-raised: #16324c;
+  --surface-sunken: #0d2135;
+  --page: #0a1826;
   --border: #24405c;
   --border-strong: #35597c;
 
@@ -210,7 +214,8 @@
   --auth-to: #17456b;
   --auth-fg: #e6f4fd;
 
-  --shadow-sm: 0 1px 2px rgb(0 0 0 / 40%);
-  --shadow: 0 4px 16px rgb(0 0 0 / 45%);
-  --shadow-lg: 0 12px 32px rgb(0 0 0 / 55%);
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 35%);
+  --shadow: 0 2px 4px rgb(0 0 0 / 30%), 0 8px 20px rgb(0 0 0 / 35%);
+  --shadow-lg: 0 8px 16px rgb(0 0 0 / 40%), 0 24px 48px rgb(0 0 0 / 45%);
+  --shadow-hover: 0 4px 8px rgb(0 0 0 / 35%), 0 14px 32px rgb(0 0 0 / 45%);
 }

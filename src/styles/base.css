@@ -22,24 +22,41 @@ body {
   overscroll-behavior-y: none;
 }
 
+/*
+ * One deliberate ramp. Headings tighten as they grow — large text set at the
+ * same tracking as body copy is what makes an interface read as unstyled.
+ */
 h1,
 h2,
 h3,
 h4 {
   margin: 0;
-  line-height: 1.25;
   font-weight: 700;
-  letter-spacing: -0.01em;
+  color: var(--text);
 }
 
 h1 {
   font-size: 1.5rem;
+  line-height: 1.2;
+  letter-spacing: -0.021em;
 }
+
 h2 {
-  font-size: 1.175rem;
+  font-size: 1.0625rem;
+  line-height: 1.3;
+  letter-spacing: -0.013em;
 }
+
 h3 {
-  font-size: 1rem;
+  font-size: 0.9375rem;
+  line-height: 1.35;
+  letter-spacing: -0.008em;
+}
+
+/* Figures that change should not reflow the layout around them. */
+.tabular {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
 }
 
 p {

@@ -150,7 +150,7 @@
 
 .card {
   background: var(--surface-raised);
-  border: 1px solid var(--border);
+  border: 1px solid transparent;
   border-radius: var(--radius);
   padding: var(--space-4);
   box-shadow: var(--shadow-sm);
@@ -173,14 +173,23 @@
   margin-bottom: var(--space-3);
 }
 
+/* A quiet affordance, not a default browser link. */
 .section__link {
-  font-size: 0.8rem;
-  font-weight: 600;
+  font-size: 0.8125rem;
+  font-weight: 650;
   background: none;
   border: 0;
-  padding: 0;
+  padding: 4px 8px;
+  margin-right: -8px;
+  border-radius: var(--radius-sm);
   color: var(--brand-700);
   cursor: pointer;
+  text-decoration: none;
+  transition: background var(--transition);
+}
+
+.section__link:hover {
+  background: var(--brand-050);
   text-decoration: underline;
   text-underline-offset: 2px;
 }
@@ -471,11 +480,30 @@
 /* -------------------------------------------------------------- xp / hud -- */
 
 .xpcard {
+  position: relative;
+  overflow: hidden;
   background: linear-gradient(140deg, var(--hero-from), var(--hero-to));
   border-radius: var(--radius-lg);
   padding: var(--space-5);
   color: var(--hero-fg);
   box-shadow: var(--shadow);
+}
+
+/* A light source in the corner, so the panel has form rather than being flat. */
+.xpcard::after {
+  content: '';
+  position: absolute;
+  top: -40%;
+  right: -12%;
+  width: 320px;
+  height: 320px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgb(255 255 255 / 55%), transparent 68%);
+  pointer-events: none;
+}
+
+.xpcard > * {
+  position: relative;
 }
 
 .xpcard__top {
@@ -490,20 +518,25 @@
 }
 
 .xpcard__level {
-  font-size: 1.25rem;
+  font-size: 1.75rem;
   font-weight: 750;
+  line-height: 1.1;
+  letter-spacing: -0.025em;
+  font-variant-numeric: tabular-nums;
 }
 
 .xpcard__title {
+  margin-top: 2px;
   font-size: 0.85rem;
-  opacity: 0.9;
+  font-weight: 650;
+  opacity: 0.82;
 }
 
 .ring {
   flex: none;
   position: relative;
-  width: 84px;
-  height: 84px;
+  width: 92px;
+  height: 92px;
 }
 
 .ring__value {
@@ -514,8 +547,9 @@
   align-items: center;
   justify-content: center;
   font-weight: 750;
-  font-size: 1.15rem;
+  font-size: 1.5rem;
   line-height: 1;
+  font-variant-numeric: tabular-nums;
 }
 
 .ring__value span {
@@ -527,7 +561,7 @@
 }
 
 .meter {
-  height: 10px;
+  height: 8px;
   border-radius: var(--radius-pill);
   background: var(--hero-track);
   overflow: hidden;
@@ -562,16 +596,24 @@
   text-align: center;
 }
 
+.stat__value,
+.xpcard .small {
+  font-variant-numeric: tabular-nums;
+}
+
 .stat__value {
-  font-size: 1.1rem;
+  font-size: 1.25rem;
   font-weight: 750;
+  letter-spacing: -0.02em;
 }
 
 .stat__label {
-  font-size: 0.68rem;
+  margin-top: 2px;
+  font-size: 0.66rem;
+  font-weight: 650;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  opacity: 0.85;
+  letter-spacing: 0.07em;
+  opacity: 0.75;
 }
 
 .stat--plain {
@@ -592,29 +634,31 @@
   align-items: center;
   gap: var(--space-3);
   padding: var(--space-4);
-  border: 1px solid var(--border);
+  border: 1px solid transparent;
   border-radius: var(--radius);
   background: var(--surface-raised);
   color: var(--text);
   text-align: left;
   text-decoration: none;
   cursor: pointer;
-  transition: border-color var(--transition), transform var(--transition);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow var(--transition), transform var(--transition);
 }
 
 .quick:hover {
-  border-color: var(--brand-700);
+  box-shadow: var(--shadow-hover);
+  transform: translateY(-1px);
 }
 
 .quick__icon {
   display: grid;
   place-items: center;
   flex: none;
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-sm);
-  background: var(--brand-050);
-  color: var(--brand-700);
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: var(--brand-100);
+  color: var(--brand-800);
 }
 
 .quick__label {
@@ -637,30 +681,46 @@
   display: flex;
   gap: var(--space-3);
   padding: var(--space-3);
-  border: 1px solid var(--border);
+  border: 1px solid transparent;
   border-radius: var(--radius);
   background: var(--surface-raised);
   color: inherit;
   text-decoration: none;
-  transition: border-color var(--transition), box-shadow var(--transition);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow var(--transition), transform var(--transition);
 }
 
 .resource:hover {
-  border-color: var(--brand-700);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-hover);
+  transform: translateY(-1px);
 }
 
+/*
+ * Generated spines. The gradient and the inset rule read as a book edge, which
+ * keeps a catalogue of records from looking like a grid of colour swatches.
+ */
 .cover {
+  position: relative;
   flex: none;
   width: 52px;
   height: 72px;
-  border-radius: 6px;
+  border-radius: 4px 7px 7px 4px;
   display: grid;
   place-items: center;
   color: #fff;
   font-weight: 750;
-  font-size: 1.05rem;
-  box-shadow: inset -6px 0 10px rgb(0 0 0 / 22%);
+  font-size: 0.95rem;
+  letter-spacing: 0.04em;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgb(13 36 56 / 24%);
+}
+
+.cover::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, rgb(255 255 255 / 26%), transparent 42%),
+    linear-gradient(to right, rgb(0 0 0 / 34%) 0 3px, rgb(255 255 255 / 22%) 3px 5px, transparent 5px);
 }
 
 .cover--lg {
@@ -727,11 +787,12 @@
   height: 26px;
   display: grid;
   place-items: center;
-  border-radius: var(--radius-pill);
-  background: var(--brand-050);
-  color: var(--brand-700);
-  font-size: 0.8rem;
+  border-radius: 8px;
+  background: var(--brand-100);
+  color: var(--brand-800);
+  font-size: 0.78rem;
   font-weight: 750;
+  font-variant-numeric: tabular-nums;
 }
 
 .delta {
@@ -829,10 +890,18 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-7) var(--space-4);
+  gap: var(--space-2);
+  padding: var(--space-5) var(--space-4);
   text-align: center;
   color: var(--text-muted);
+}
+
+.empty svg {
+  color: var(--border-strong);
+}
+
+.empty h3 {
+  color: var(--text);
 }
 
 .skeleton {
@@ -1190,9 +1259,26 @@
     color: var(--text);
   }
 
+  .tabbar__item {
+    position: relative;
+  }
+
   .tabbar__item[aria-current='page'] {
     background: var(--brand-050);
-    color: var(--brand-700);
+    color: var(--brand-800);
+    font-weight: 700;
+  }
+
+  .tabbar__item[aria-current='page']::before {
+    content: '';
+    position: absolute;
+    left: -12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 22px;
+    border-radius: 0 3px 3px 0;
+    background: var(--brand-700);
   }
 
   .topbar {
