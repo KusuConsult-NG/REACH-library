@@ -37,6 +37,10 @@
 
   --info-700: #1e40af;
   --info-100: #dbeafe;
+  /* Caution, not failure: the last copy is still borrowable. 7.48:1 on its own
+     tint, so it stays legible at tag size. */
+  --caution-700: #6b4200;
+  --caution-100: #fcecc9;
 
   --success-700: #047857;
   --success-100: #d1fae5;
@@ -124,6 +128,7 @@
     --award-100: #12314b;
     --danger-100: #3b1414;
     --info-100: #10233d;
+    --caution-100: #43300c;
     --success-100: #06301f;
 
     --brand-700: #4fc3f7;
@@ -134,6 +139,7 @@
     --danger-600: #fca5a5;
     --danger-700: #fca5a5;
     --info-700: #93c5fd;
+    --caution-700: #f7c774;
     --success-700: #6ee7b7;
 
     --accent: #4fc3f7;
@@ -181,6 +187,7 @@
   --award-100: #12314b;
   --danger-100: #3b1414;
   --info-100: #10233d;
+  --caution-100: #43300c;
   --success-100: #06301f;
 
   --brand-700: #4fc3f7;
@@ -191,6 +198,7 @@
   --danger-600: #fca5a5;
   --danger-700: #fca5a5;
   --info-700: #93c5fd;
+  --caution-700: #f7c774;
   --success-700: #6ee7b7;
 
   --accent: #4fc3f7;

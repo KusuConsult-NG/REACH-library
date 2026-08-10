@@ -4,6 +4,8 @@ import { useAppDispatch, useAppSelector } from '@/app/hooks'
 import { loadResource, toggleSaved } from '@/features/catalogue/catalogueSlice'
 import {
   borrowResource,
+  copyCitation,
+  downloadRecord,
   downloadResource,
   openEresource,
   recordBrowse,
@@ -11,8 +13,9 @@ import {
 } from '@/features/catalogue/actions'
 import { AvailabilityTag, ResourceCard, TYPE_LABELS, initialsFor } from '@/components/ResourceCard'
 import { Skeleton, Spinner } from '@/components/primitives'
-import { BookmarkIcon, DownloadIcon, ExternalIcon, MapIcon } from '@/components/icons'
+import { BookmarkIcon, CheckIcon, DownloadIcon, ExternalIcon, MapIcon } from '@/components/icons'
 import { XP_VALUES } from '@/config/xp'
+import { citationFor } from '@/utils/citation'
 import { dueLabel, formatDate } from '@/utils/date'
 
 export function ResourceScreen() {
@@ -70,7 +73,15 @@ export function ResourceScreen() {
   }
 
   const isDigital = resource.copiesAvailable == null
-  const available = (resource.copiesAvailable ?? 0) > 0
+  const onShelf = resource.copiesAvailable ?? 0
+  const total = resource.copiesTotal ?? 0
+  const available = onShelf > 0
+  /**
+   * Only an external file can actually be fetched. A `/repository/...` path is
+   * served by the institutional repository, which this build is not wired to,
+   * so offering a download for one would open a dead tab.
+   */
+  const retrievable = Boolean(resource.url && /^https?:/i.test(resource.url))
 
   return (
     <div className="stack" style={{ gap: 'var(--space-5)' }}>
@@ -114,21 +125,58 @@ export function ResourceScreen() {
         </div>
       ) : null}
 
+      {!isDigital ? (
+        <section className="card stack stack--tight" aria-labelledby="stock-heading">
+          <h2 id="stock-heading" style={{ fontSize: '1rem' }}>
+            Availability
+          </h2>
+          <p style={{ fontWeight: 650 }}>
+            {onShelf === 0
+              ? `All ${total} ${total === 1 ? 'copy is' : 'copies are'} on loan`
+              : `${onShelf} of ${total} ${total === 1 ? 'copy' : 'copies'} on the shelf now`}
+          </p>
+          <p className="small muted">
+            {onShelf === 0
+              ? 'Place a hold to join the queue — you are notified as soon as a copy is returned.'
+              : onShelf === 1
+                ? 'This is the last copy. It may go before you get here, so reserve it if you cannot collect today.'
+                : `${total - onShelf} of ${total} out with other borrowers.`}
+          </p>
+          {resource.callNumber || resource.location ? (
+            <p className="small muted">
+              {[resource.callNumber, resource.location].filter(Boolean).join(' · ')}
+            </p>
+          ) : null}
+        </section>
+      ) : null}
+
       <div className="stack stack--tight">
         {isDigital ? (
           <>
-            <button type="button" className="btn btn--block" onClick={() => dispatch(openEresource(resource))}>
+            <button
+              type="button"
+              className="btn btn--block"
+              disabled={!retrievable}
+              onClick={() => dispatch(openEresource(resource))}
+            >
               <ExternalIcon size={18} />
-              Open resource (+{XP_VALUES.eresource_access} XP)
+              Open full text (+{XP_VALUES.eresource_access} XP)
             </button>
             <button
               type="button"
               className="btn btn--secondary btn--block"
+              disabled={!retrievable}
               onClick={() => dispatch(downloadResource(resource))}
             >
               <DownloadIcon size={18} />
-              Download (+{XP_VALUES.resource_download} XP)
+              Download file (+{XP_VALUES.resource_download} XP)
             </button>
+            {!retrievable ? (
+              <p className="field__hint">
+                The full text is held in the University of Jos repository, which is not connected to this
+                build. The catalogue record below can still be saved and cited.
+              </p>
+            ) : null}
           </>
         ) : available ? (
           <button
@@ -169,6 +217,49 @@ export function ResourceScreen() {
           <p className="small muted">Borrowing needs a connection. Reservations placed offline are queued.</p>
         ) : null}
       </div>
+
+      {/*
+        The library rarely owns the full text, but it does own the record — and
+        a record is what gets pasted into a reading list or a supervisor's
+        inbox. These work offline, because everything in them is already here.
+      */}
+      <section className="card stack stack--tight" aria-labelledby="cite-heading">
+        <h2 id="cite-heading" style={{ fontSize: '1rem' }}>
+          Cite or save this record
+        </h2>
+        <p className="small" style={{ userSelect: 'text' }}>
+          {citationFor(resource)}
+        </p>
+        <div className="wrap">
+          <button
+            type="button"
+            className="btn btn--secondary btn--sm"
+            onClick={() => void dispatch(copyCitation(resource))}
+          >
+            <CheckIcon size={16} />
+            Copy citation
+          </button>
+          <button
+            type="button"
+            className="btn btn--ghost btn--sm"
+            onClick={() => dispatch(downloadRecord(resource, 'ris'))}
+          >
+            <DownloadIcon size={16} />
+            Citation file (.ris)
+          </button>
+          <button
+            type="button"
+            className="btn btn--ghost btn--sm"
+            onClick={() => dispatch(downloadRecord(resource, 'txt'))}
+          >
+            <DownloadIcon size={16} />
+            Record as text
+          </button>
+        </div>
+        <p className="field__hint">
+          The .ris file imports straight into Zotero, Mendeley or EndNote.
+        </p>
+      </section>
 
       {resource.abstract ? (
         <section aria-labelledby="about-heading">

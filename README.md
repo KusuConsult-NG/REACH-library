@@ -28,7 +28,7 @@ and loan period.
 ```bash
 npm run build        # typecheck + production build into dist/
 npm run preview      # serve the production build (service worker active)
-npm test             # 110 unit / integration tests (and `cd server && npm test` for 37 more)
+npm test             # 129 unit / integration tests (and `cd server && npm test` for 37 more)
 ```
 
 The service worker is only registered in a production build, so use `npm run preview` to exercise
@@ -50,7 +50,7 @@ Then filter the console on `reach:identity`, `reach:persist`, `reach:transfer`, 
 | PRD section | Status in this build |
 | --- | --- |
 | 3.1 Authentication & profile | Sign-in, borrower profile, XP level, current loans, privacy controls |
-| 3.2 Resource discovery & access | Catalogue search with facets, filters and sorting; borrowing, holds, renewals, loan history; e-resource access with proxy pass-through |
+| 3.2 Resource discovery & access | Catalogue search with facets, filters and sorting; live shelf counts; borrowing, holds, renewals, loan history; e-resource access with proxy pass-through; citation export |
 | 3.3 XP reward system | All five PRD earning rules, 15 levels, activity log, weekly goals with bonus, daily caps, spending XP on library rewards, transfers between members |
 | 3.4 Notifications | Due-date reminders, overdue notices, hold-ready, new resources by interest, XP milestones, announcements, return confirmations |
 | 3.5 Social features | Following, trending by subject, de-identified activity feed, per-feature privacy controls |
@@ -98,6 +98,27 @@ by the backend rather than the browser ([`src/config/transfers.ts`](src/config/t
 Incoming XP is parked for the recipient and collected on their next sign-in. Collection is
 at-least-once and application is idempotent — the credit is applied and written to storage *before*
 the server is told to drop it — so a tab closed mid-collection redelivers rather than losing the XP.
+
+### Shelf counts and what you can take away
+
+Every physical record shows what is actually on the shelf — "3 of 5 on the shelf", "Last copy on the
+shelf", "All 8 copies are on loan" — on the search card and again, spelled out with the shelf mark, on
+the record itself. The count is re-read from the backend after every checkout, return, hold and
+cancellation, and pushed into both the record cache and any open result list: borrowing the last copy
+has to change what the next person sees, or they tap Borrow and are refused by the server. When
+nothing is on the shelf the page offers a hold instead of a borrow.
+
+The library does not own the full text of most of what it catalogues — that sits with publishers
+behind the institutional subscription — so the app is explicit about which is which:
+
+- **Full text with a real URL** opens or downloads through the library proxy, and earns the access or
+  download XP.
+- **Repository-hosted records** (`/repository/...`) say plainly that the repository is not connected
+  to this build, rather than opening a dead tab. The buttons are disabled, not decorative.
+- **The catalogue record itself** is always available: copy the reference, export a `.ris` for Zotero,
+  Mendeley or EndNote, or save the whole record as text. These are generated on the device, so they
+  work offline — and they earn no XP, because paying for a file the app made itself would reward
+  tapping rather than reading.
 
 ### Whose data is whose
 

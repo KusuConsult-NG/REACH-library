@@ -1,6 +1,7 @@
 import { createAsyncThunk, createSlice, type PayloadAction } from '@reduxjs/toolkit'
 import { api, ApiError } from '@/services/api'
-import type { ConsultationRequest, Hold, Loan, SpaceBooking, StudySpace } from '@/types'
+import { applyResourceUpdate } from '@/features/catalogue/catalogueSlice'
+import type { ConsultationRequest, Hold, Loan, Resource, SpaceBooking, StudySpace } from '@/types'
 
 export interface CirculationState {
   loans: Loan[]
@@ -29,6 +30,27 @@ function message(error: unknown, fallback: string) {
   return error instanceof ApiError ? error.message : fallback
 }
 
+/**
+ * Re-read a record after a transaction that changed its availability.
+ *
+ * Issuing or returning a copy changes the shelf count that every screen shows.
+ * Doing this inside the circulation thunks rather than at each call site means
+ * the profile screen's "Mark returned" and the resource page's Borrow both keep
+ * the catalogue honest without either of them having to remember to.
+ */
+async function refreshAvailability(
+  dispatch: (action: { type: string; payload: Resource[] }) => void,
+  resourceId: string | undefined,
+) {
+  if (!resourceId) return
+  try {
+    const fresh = await api.getResource(resourceId)
+    if (fresh) dispatch(applyResourceUpdate([fresh]))
+  } catch {
+    // A stale count beats a failed transaction; the next load corrects it.
+  }
+}
+
 export const loadCirculation = createAsyncThunk('circulation/load', async () => {
   const [loans, holds, spaces, bookings] = await Promise.all([
     api.getLoans(),
@@ -41,10 +63,16 @@ export const loadCirculation = createAsyncThunk('circulation/load', async () => 
 
 export const checkoutResource = createAsyncThunk<Loan, string, { rejectValue: string }>(
   'circulation/checkout',
-  async (resourceId, { rejectWithValue }) => {
+  async (resourceId, { rejectWithValue, dispatch }) => {
     try {
-      return await api.checkout(resourceId)
+      const loan = await api.checkout(resourceId)
+      await refreshAvailability(dispatch, resourceId)
+      return loan
     } catch (error) {
+      // A refusal is usually "somebody else took the last copy", so re-read the
+      // record too: the button the user just pressed should not still say the
+      // item is available.
+      await refreshAvailability(dispatch, resourceId)
       return rejectWithValue(message(error, 'The item could not be issued. Please try again.'))
     }
   },
@@ -63,9 +91,11 @@ export const renewLoan = createAsyncThunk<Loan, string, { rejectValue: string }>
 
 export const returnLoan = createAsyncThunk<Loan, string, { rejectValue: string }>(
   'circulation/return',
-  async (loanId, { rejectWithValue }) => {
+  async (loanId, { rejectWithValue, dispatch }) => {
     try {
-      return await api.returnLoan(loanId)
+      const returned = await api.returnLoan(loanId)
+      await refreshAvailability(dispatch, returned.resourceId)
+      return returned
     } catch (error) {
       return rejectWithValue(message(error, 'The return could not be recorded.'))
     }
@@ -74,20 +104,29 @@ export const returnLoan = createAsyncThunk<Loan, string, { rejectValue: string }
 
 export const placeHold = createAsyncThunk<Hold, string, { rejectValue: string }>(
   'circulation/placeHold',
-  async (resourceId, { rejectWithValue }) => {
+  async (resourceId, { rejectWithValue, dispatch }) => {
     try {
-      return await api.placeHold(resourceId)
+      const hold = await api.placeHold(resourceId)
+      await refreshAvailability(dispatch, resourceId)
+      return hold
     } catch (error) {
       return rejectWithValue(message(error, 'The hold could not be placed.'))
     }
   },
 )
 
-export const cancelHold = createAsyncThunk<string, string, { rejectValue: string }>(
+export const cancelHold = createAsyncThunk<
+  string,
+  string,
+  { rejectValue: string; state: { circulation: CirculationState } }
+>(
   'circulation/cancelHold',
-  async (holdId, { rejectWithValue }) => {
+  async (holdId, { rejectWithValue, dispatch, getState }) => {
+    // Read the record id before the hold is gone from state.
+    const resourceId = getState().circulation.holds.find((hold) => hold.id === holdId)?.resourceId
     try {
       await api.cancelHold(holdId)
+      await refreshAvailability(dispatch, resourceId)
       return holdId
     } catch (error) {
       return rejectWithValue(message(error, 'The hold could not be cancelled.'))

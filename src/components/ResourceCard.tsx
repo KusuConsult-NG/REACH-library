@@ -20,18 +20,33 @@ export function initialsFor(title: string) {
     .toUpperCase()
 }
 
+/**
+ * What is on the shelf, at a glance.
+ *
+ * The count matters more than the word: "available" tells a student nothing
+ * about whether to hurry, and a title down to its last copy is the case where
+ * they most need to know before walking across campus.
+ */
 export function AvailabilityTag({ resource }: { resource: Resource }) {
-  if (resource.copiesAvailable == null) {
+  const available = resource.copiesAvailable
+  if (available == null) {
     return <span className="tag tag--digital">Online access</span>
   }
-  if (resource.copiesAvailable > 0) {
+  if (available === 0) {
     return (
-      <span className="tag tag--available">
-        {resource.copiesAvailable} of {resource.copiesTotal} available
+      <span className="tag tag--out">
+        All {resource.copiesTotal} on loan
       </span>
     )
   }
-  return <span className="tag tag--out">All copies on loan</span>
+  if (available === 1) {
+    return <span className="tag tag--last">Last copy on the shelf</span>
+  }
+  return (
+    <span className="tag tag--available">
+      {available} of {resource.copiesTotal} on the shelf
+    </span>
+  )
 }
 
 export function ResourceCard({ resource }: { resource: Resource }) {

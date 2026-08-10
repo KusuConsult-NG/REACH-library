@@ -141,6 +141,20 @@ const catalogueSlice = createSlice({
     cacheResources(state, action: PayloadAction<Resource[]>) {
       for (const resource of action.payload) state.cache[resource.id] = resource
     },
+    /**
+     * Replace a record wherever it is currently on screen.
+     *
+     * Unlike `cacheResources` this also rewrites the open result list: after a
+     * checkout the availability count has changed, and a search page still
+     * showing "1 of 4 available" for a title with none left is how a user ends
+     * up tapping Borrow and being refused.
+     */
+    applyResourceUpdate(state, action: PayloadAction<Resource[]>) {
+      for (const resource of action.payload) {
+        state.cache[resource.id] = resource
+        state.results = state.results.map((item) => (item.id === resource.id ? resource : item))
+      }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -204,6 +218,7 @@ export const {
   clearRecentSearches,
   toggleSaved,
   cacheResources,
+  applyResourceUpdate,
 } = catalogueSlice.actions
 
 export default catalogueSlice.reducer
